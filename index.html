@@ -472,8 +472,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
    SETTINGS PANEL
 ════════════════════════════════ */
 .settings-overlay{
-  position:absolute;inset:0;background:rgba(0,0,0,.5);
-  z-index:200;display:none;align-items:flex-end;
+  position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:2000;display:none;align-items:flex-end;
   animation:fadeIn .2s ease;
 }
 .settings-overlay.open{display:flex;}
@@ -598,8 +598,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 
 /* LOGO MODAL */
 .logo-modal-overlay {
-  position:absolute;inset:0;background:rgba(0,0,0,.6);
-  z-index:400;display:none;align-items:center;justify-content:center;padding:20px;
+  position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;
 }
 .logo-modal-overlay.open{display:flex;}
 .logo-modal-box {
@@ -965,20 +965,46 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
       <div class="sec">
         <div class="sec-hd"><div class="sec-title">📤 Upload Data Siswa</div></div>
         <div class="upload-card">
-          <h3>📊 Import via Excel</h3>
-          <p>Gunakan template resmi SIMPOLIN untuk format yang benar</p>
+          <h3>📊 Import via Excel / CSV</h3>
+          <p>Gunakan template resmi SIMPOLIN — cukup 3 kolom saja</p>
+
+          <!-- Info kolom -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;">
+            <div style="background:#DBEAFE;border-radius:10px;padding:8px;text-align:center;">
+              <div style="font-size:18px;">🔢</div>
+              <div style="font-size:11px;font-weight:800;color:#1E40AF;margin-top:3px;">NISN</div>
+              <div style="font-size:10px;color:#3B82F6;">10 digit</div>
+            </div>
+            <div style="background:#D1FAE5;border-radius:10px;padding:8px;text-align:center;">
+              <div style="font-size:18px;">👤</div>
+              <div style="font-size:11px;font-weight:800;color:#065F46;margin-top:3px;">NAMA_SISWA</div>
+              <div style="font-size:10px;color:#059669;">Nama lengkap</div>
+            </div>
+            <div style="background:#FEF3C7;border-radius:10px;padding:8px;text-align:center;">
+              <div style="font-size:18px;">🏫</div>
+              <div style="font-size:11px;font-weight:800;color:#92400E;margin-top:3px;">KELAS</div>
+              <div style="font-size:10px;color:#D97706;">7A/8B/9C dst</div>
+            </div>
+          </div>
+
           <div class="upload-zone" onclick="triggerExcelUpload()" style="cursor:pointer;">
             <div class="uz-i">📂</div>
-            <div class="uz-t">Klik atau Seret File Excel</div>
-            <div class="uz-s">Format: .xlsx | Maks. 500 siswa</div>
+            <div class="uz-t">Klik atau Seret File CSV/Excel</div>
+            <div class="uz-s">Format: .csv | Maks. 500 siswa</div>
           </div>
+
           <div class="upload-steps">
-            <div class="up-step"><div class="up-num">1</div><div class="up-txt">Unduh template Excel resmi</div></div>
-            <div class="up-step"><div class="up-num">2</div><div class="up-txt">Isi data siswa sesuai format</div></div>
-            <div class="up-step"><div class="up-num">3</div><div class="up-txt">Upload & klik Proses Data</div></div>
+            <div class="up-step"><div class="up-num">1</div><div class="up-txt">Download template — isi NISN, Nama Siswa, Kelas</div></div>
+            <div class="up-step"><div class="up-num">2</div><div class="up-txt">Simpan sebagai CSV, lalu upload di sini</div></div>
+            <div class="up-step"><div class="up-num">3</div><div class="up-txt">Data tersimpan ke Supabase — siswa bisa login</div></div>
           </div>
+
+          <div style="background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;padding:9px 12px;margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:800;color:#065F46;">🔑 Password default siswa = NISN masing-masing</div>
+          </div>
+
           <div class="upload-btns">
-            <button class="btn-dl" onclick="downloadTemplateExcel()">⬇️ Template Excel</button>
+            <button class="btn-dl" onclick="downloadTemplateExcel()">⬇️ Template CSV</button>
             <button class="btn-up" onclick="triggerExcelUpload()">📤 Upload & Proses</button>
           </div>
         </div>
@@ -2038,7 +2064,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
       <h3 style="margin:0;">🔗 Integrasi Kinerja ASN</h3>
       <button onclick="openEditIntegrasi()" style="background:#EFF6FF;border:1.5px solid #DBEAFE;color:#1E40AF;border-radius:8px;padding:5px 10px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">✏️ Edit</button>
     </div>
-    <p style="color:var(--muted);font-size:12px;margin-bottom:14px;">Akses cepat layanan kepegawaian ASN</p>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:10px;">Akses cepat layanan kepegawaian ASN — tersinkron semua perangkat</p>
+
 
     <div id="integrasi-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
       <!-- Rendered dynamically -->
@@ -2513,69 +2540,99 @@ function openSettings() {
 function closeSettings() { document.getElementById('settings-overlay').classList.remove('open'); }
 function closeSettingsOutside(e) { if(e.target === document.getElementById('settings-overlay')) closeSettings(); }
 
-// Notif
+// ── Notif Guru ──
 function openNotif() {
-  document.getElementById('notif-overlay').classList.add('open');
-  // Clear badge
+  var overlay = document.getElementById('notif-overlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
   var badge = document.getElementById('tea-notif-badge');
-  if (badge) badge.style.display = 'none';
+  if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
   _lastNotifCount = 0;
   loadTeacherNotif();
 }
+
 async function loadTeacherNotif() {
   var el = document.getElementById('notif-list-content');
-  if (!el) el = document.querySelector('#notif-overlay .notif-list');
   if (!el) return;
-  el.innerHTML = '<div style="text-align:center;padding:16px;color:#64748B;font-size:12px;">⏳ Memuat notifikasi...</div>';
+  el.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;">⏳ Memuat notifikasi...</div>';
+
+  var items = [];
+
+  // 1. Exam logs: pelanggaran, ujian mulai/selesai, minta retry
   try {
-    var items = [];
-
-    // 1. Exam logs (pelanggaran, mulai ujian, minta ulang)
-    try {
-      var logData = await sbFetch('/rest/v1/exam_logs?select=*&order=created_at.desc&limit=15');
-      if (logData && logData.length > 0) {
-        logData.forEach(function(log) {
-          var icon='🔔', title=log.event_type||'Aktivitas', body=log.siswa_name||'', dot='nd-read';
-          var waktu = log.created_at ? new Date(log.created_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-          if (log.event_type==='exam_cancelled'||log.event_type==='violation') { icon='🚫'; title='Pelanggaran — '+(log.siswa_name||'-'); body=(log.data&&log.data.reason)||'Pelanggaran ujian'; dot='nd-new'; }
-          else if (log.event_type==='retry_request') { icon='📨'; title='Minta Ujian Ulang — '+(log.siswa_name||'-'); body=(log.data&&log.data.alasan)||''; dot='nd-new'; }
-          else if (log.event_type==='exam_started') { icon='📝'; title='Mulai Ujian — '+(log.siswa_name||'-'); body='Siswa mulai mengerjakan ujian'; dot='nd-read'; }
-          else if (log.event_type==='exam_finished') { icon='✅'; title='Selesai Ujian — '+(log.siswa_name||'-'); body='Nilai: '+(log.data&&log.data.score!=null?log.data.score:'?'); dot='nd-new'; }
-          else if (log.event_type==='student_login') { icon='👤'; title='Login Siswa — '+(log.siswa_name||'-'); body=''; dot='nd-read'; }
-          items.push({ icon, title, body, dot, waktu, ts: log.created_at || '' });
-        });
-      }
-    } catch(e2) {}
-
-    // 2. Tugas yang baru dikumpulkan siswa
-    try {
-      var submitData = await sbFetch('/rest/v1/tugas_submit?select=*&order=submitted_at.desc&limit=10');
-      if (submitData && submitData.length > 0) {
-        submitData.forEach(function(s) {
-          var waktu2 = s.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-          items.push({ icon:'✍️', title:'Tugas Dikumpulkan — '+(s.siswa_nama||'Siswa'), body:'📎 '+(s.file_url||'File tugas'), dot:'nd-new', waktu: waktu2, ts: s.submitted_at || '' });
-        });
-      }
-    } catch(e3) {}
-
-    // Sort by timestamp desc
-    items.sort(function(a, b) { return (b.ts||'') > (a.ts||'') ? 1 : -1; });
-
-    if (items.length === 0) {
-      el.innerHTML = '<div style="text-align:center;padding:24px;color:#64748B;font-size:13px;font-weight:600;">😊 Belum ada notifikasi terbaru.<br><span style="font-size:11px;opacity:.7;">Notifikasi muncul saat siswa login, mulai ujian, atau kumpul tugas.</span></div>';
-      return;
+    var logData = await sbFetch('/rest/v1/exam_logs?select=*&order=created_at.desc&limit=20');
+    if (logData && logData.length > 0) {
+      logData.forEach(function(log) {
+        var icon = '🔔', title = log.event_type || 'Aktivitas', body = '', dot = 'nd-read';
+        var waktu = log.created_at
+          ? new Date(log.created_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+          : '';
+        if (log.event_type === 'exam_cancelled' || log.event_type === 'violation') {
+          icon = '🚫'; dot = 'nd-new';
+          title = 'Pelanggaran — ' + (log.siswa_name || '-');
+          body  = (log.data && log.data.reason) || 'Pelanggaran ujian terdeteksi';
+        } else if (log.event_type === 'retry_request') {
+          icon = '📨'; dot = 'nd-new';
+          title = 'Minta Ujian Ulang — ' + (log.siswa_name || '-');
+          body  = (log.data && log.data.alasan) || '';
+        } else if (log.event_type === 'exam_finished') {
+          icon = '✅'; dot = 'nd-new';
+          title = 'Selesai Ujian — ' + (log.siswa_name || '-');
+          body  = 'Nilai: ' + ((log.data && log.data.score != null) ? log.data.score : '?');
+        } else if (log.event_type === 'exam_started') {
+          icon = '📝';
+          title = 'Mulai Ujian — ' + (log.siswa_name || '-');
+          body  = 'Siswa mulai mengerjakan ujian';
+        } else if (log.event_type === 'student_login') {
+          icon = '👤';
+          title = 'Login Siswa — ' + (log.siswa_name || '-');
+        }
+        items.push({ icon:icon, title:title, body:body, dot:dot, waktu:waktu, ts:log.created_at||'' });
+      });
     }
+  } catch(e) { console.warn('loadTeacherNotif exam_logs:', e); }
 
-    el.innerHTML = items.slice(0, 20).map(function(item) {
-      return '<div class="notif-item"><div class="notif-dot '+item.dot+'"></div><div class="notif-ico">'+item.icon+'</div>'
-        + '<div class="notif-txt"><div class="nt">'+item.title+'</div>'
-        + (item.body ? '<div class="nb">'+item.body+'</div>' : '')
-        + '<div class="ntm">🕐 '+item.waktu+'</div></div></div>';
-    }).join('');
+  // 2. Tugas baru dikumpulkan siswa
+  try {
+    var submitData = await sbFetch('/rest/v1/tugas_submit?select=*&order=submitted_at.desc&limit=10');
+    if (submitData && submitData.length > 0) {
+      submitData.forEach(function(s) {
+        var waktu = s.submitted_at
+          ? new Date(s.submitted_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+          : '';
+        items.push({
+          icon:'✍️', dot:'nd-new',
+          title:'Tugas Dikumpulkan — ' + (s.siswa_nama || 'Siswa'),
+          body: '📎 ' + (s.file_url || 'File tugas'),
+          waktu: waktu, ts: s.submitted_at || ''
+        });
+      });
+    }
+  } catch(e) { console.warn('loadTeacherNotif tugas_submit:', e); }
 
-  } catch(e) {
-    el.innerHTML = '<div style="text-align:center;padding:14px;color:#991B1B;font-size:12px;">⚠️ Gagal memuat notifikasi. Cek koneksi Supabase.</div>';
+  // Sort newest first
+  items.sort(function(a, b) { return (b.ts > a.ts) ? 1 : -1; });
+
+  if (items.length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:28px 16px;">'
+      + '<div style="font-size:36px;margin-bottom:10px;">🔔</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#1E293B;margin-bottom:6px;">Belum ada notifikasi</div>'
+      + '<div style="font-size:11px;color:#64748B;line-height:1.6;">Notifikasi akan muncul saat:<br>'
+      + '📝 Siswa mulai/selesai ujian<br>✍️ Siswa kumpul tugas<br>🚫 Ada pelanggaran ujian</div>'
+      + '</div>';
+    return;
   }
+
+  el.innerHTML = items.slice(0, 25).map(function(item) {
+    return '<div class="notif-item">'
+      + '<div class="notif-dot ' + item.dot + '"></div>'
+      + '<div class="notif-ico">' + item.icon + '</div>'
+      + '<div class="notif-txt">'
+        + '<div class="nt">' + item.title + '</div>'
+        + (item.body ? '<div class="nb">' + item.body + '</div>' : '')
+        + '<div class="ntm">🕐 ' + item.waktu + '</div>'
+      + '</div></div>';
+  }).join('');
 }
 
 // Kop modal
@@ -6081,27 +6138,18 @@ var DEFAULT_INTEGRASI = [
 
 var integrasiList = [];
 
-function loadIntegrasi() {
-  try {
-    var saved = localStorage.getItem('integrasiLinks');
-    if (saved) {
-      integrasiList = JSON.parse(saved);
-    } else {
-      integrasiList = DEFAULT_INTEGRASI.slice();
-    }
-  } catch(e) {
-    integrasiList = DEFAULT_INTEGRASI.slice();
-  }
-}
+// loadIntegrasi — see Supabase version below
 
-function saveIntegrasi() {
-  try { localStorage.setItem('integrasiLinks', JSON.stringify(integrasiList)); } catch(e){}
-}
+// saveIntegrasi — see Supabase version below
 
-function openIntegrasi() {
-  loadIntegrasi();
-  renderIntegrasiGrid();
+async function openIntegrasi() {
+  // Show skeleton while loading
+  var grid = document.getElementById('integrasi-grid');
+  if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:20px;color:#64748B;font-size:12px;">⏳ Memuat dari Supabase...</div>';
   document.getElementById('integrasi-modal').classList.add('open');
+  await loadIntegrasi();
+  renderIntegrasiGrid();
+
 }
 
 function closeIntegrasiModal(e) {
@@ -6143,113 +6191,208 @@ var WARNA_OPTS_INTEGRASI  = ['#1E40AF','#065F46','#991B1B','#92400E','#6B21A8','
 function renderEditIntegrasiList() {
   var container = document.getElementById('edit-integrasi-list');
   if (!container) return;
-  if (integrasiList.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:16px;color:#64748B;font-size:13px;">Belum ada item. Klik "+ Tambah Shortcut".</div>';
+  if (!integrasiList || integrasiList.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:16px;color:#64748B;font-size:13px;">Belum ada item. Klik Tambah Shortcut.</div>';
     return;
   }
+  var EMOJI_OPTS = ['🏛️','📋','💊','🏦','📊','🎓','📱','🗂️','📝','🔗','🌐','💼','📌','🏫','⚙️','🔑','📂','💡','🚀','📡'];
+  var WARNA_OPTS = ['#1E40AF','#065F46','#991B1B','#92400E','#6B21A8','#0E7490','#1D4ED8','#BE123C','#059669','#DC2626','#7C3AED','#0284C7','#64748B','#B45309'];
+
   container.innerHTML = integrasiList.map(function(item, idx) {
-    var emojiPicker = EMOJI_OPTS_INTEGRASI.map(function(e) {
-      return '<span onclick="updateIntegrasiIcon('+idx+',\''+e+'\')" title="'+e+'" style="font-size:18px;cursor:pointer;padding:3px 5px;border-radius:6px;border:1.5px solid '+(item.icon===e?'#2563EB':'#E2E8F0')+';background:'+(item.icon===e?'#DBEAFE':'#F8FAFC')+';">'+e+'</span>';
-    }).join('');
-    var warnaOpts = WARNA_OPTS_INTEGRASI.map(function(w) {
-      return '<div onclick="updateIntegrasiWarna('+idx+',\''+w+'\')" style="width:22px;height:22px;border-radius:50%;background:'+w+';cursor:pointer;border:'+(item.warna===w?'3px solid #1E293B':'2px solid transparent')+';flex-shrink:0;"></div>';
+    var emojiPicker = EMOJI_OPTS.map(function(e) {
+      var sel = item.icon === e;
+      return '<span onclick="pickIntegrasiEmoji(' + idx + ',this.textContent)" '
+        + 'style="font-size:18px;cursor:pointer;padding:3px 5px;border-radius:6px;'
+        + 'border:1.5px solid ' + (sel?'#2563EB':'#E2E8F0') + ';'
+        + 'background:' + (sel?'#DBEAFE':'#F8FAFC') + ';">' + e + '</span>';
     }).join('');
 
-    return '<div style="background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:14px;padding:12px;position:relative;">'
+    var warnaOpts = WARNA_OPTS.map(function(w) {
+      var sel = item.warna === w;
+      return '<div onclick="pickIntegrasiWarna(' + idx + ',\'' + w + '\')" '
+        + 'style="width:24px;height:24px;border-radius:50%;background:' + w + ';cursor:pointer;'
+        + 'border:' + (sel?'3px solid #1E293B':'2px solid transparent') + ';flex-shrink:0;"></div>';
+    }).join('');
+
+    var iconHtml = item.logoImg
+      ? '<img src="' + item.logoImg + '" style="width:100%;height:100%;object-fit:cover;border-radius:11px;">'
+      : (item.icon || '🔗');
+
+    var logoBtnTxt = item.logoImg ? '✅ Logo terpasang — klik ganti' : '📁 Upload Logo (JPG/PNG max 500KB)';
+    var logoPreview = item.logoImg
+      ? '<div style="margin-top:5px;text-align:center;"><img src="' + item.logoImg + '" style="height:32px;border-radius:6px;border:1.5px solid #E2E8F0;"></div>'
+      : '';
+
+    var safeNama = (item.nama || '').replace(/"/g, '&quot;');
+    var safeUrl  = (item.url  || '').replace(/"/g, '&quot;');
+
+    return '<div style="background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:14px;padding:12px;margin-bottom:8px;">'
+      // Row: icon preview + inputs + delete btn
       + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
-        + '<div style="width:44px;height:44px;border-radius:12px;background:'+item.warna+';display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;cursor:pointer;" id="integ-icon-preview-'+idx+'">'+item.icon+'</div>'
-        + '<div style="flex:1;">'
-          + '<input type="text" value="'+item.nama+'" placeholder="Nama Layanan" oninput="updateIntegrasi('+idx+',\'nama\',this.value)" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid #E2E8F0;font-family:\'Nunito\',sans-serif;font-size:13px;font-weight:700;color:#1E293B;outline:none;margin-bottom:5px;">'
-          + '<input type="text" value="'+item.url+'" placeholder="https://..." oninput="updateIntegrasi('+idx+',\'url\',this.value)" style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid #E2E8F0;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:600;color:#2563EB;outline:none;">'
+        + '<div id="integ-prev-' + idx + '" style="width:44px;height:44px;border-radius:12px;background:' + item.warna + ';display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;">' + iconHtml + '</div>'
+        + '<div style="flex:1;min-width:0;">'
+          + '<input type="text" data-idx="' + idx + '" data-field="nama" value="' + safeNama + '" placeholder="Nama Layanan" oninput="updateIntegrasiLive(this)" '
+          + 'style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid #E2E8F0;font-family:Nunito,sans-serif;font-size:13px;font-weight:700;color:#1E293B;outline:none;margin-bottom:5px;box-sizing:border-box;">'
+          + '<input type="text" data-idx="' + idx + '" data-field="url" value="' + safeUrl + '" placeholder="https://..." oninput="updateIntegrasiLive(this)" '
+          + 'style="width:100%;padding:7px 10px;border-radius:8px;border:1.5px solid #DBEAFE;font-family:Nunito,sans-serif;font-size:12px;font-weight:600;color:#2563EB;outline:none;box-sizing:border-box;">'
         + '</div>'
-        + '<button onclick="hapusIntegrasiItem('+idx+')" style="width:30px;height:30px;border-radius:8px;border:none;background:#FEE2E2;color:#991B1B;font-size:14px;cursor:pointer;flex-shrink:0;">🗑️</button>'
+        + '<button onclick="hapusIntegrasiItem(' + idx + ')" title="Hapus" '
+          + 'style="width:32px;height:32px;border-radius:8px;border:none;background:#FEE2E2;color:#991B1B;font-size:15px;cursor:pointer;flex-shrink:0;">🗑️</button>'
       + '</div>'
+      // Emoji picker
       + '<div style="margin-bottom:8px;">'
-        + '<div style="font-size:10px;font-weight:800;color:#64748B;margin-bottom:5px;letter-spacing:.3px;">PILIH IKON</div>'
-        + '<div style="display:flex;flex-wrap:wrap;gap:4px;">'+emojiPicker+'</div>'
+        + '<div style="font-size:10px;font-weight:800;color:#64748B;margin-bottom:5px;letter-spacing:.3px;">PILIH IKON EMOJI</div>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:3px;">' + emojiPicker + '</div>'
       + '</div>'
-      + '<div>'
+      // Color picker
+      + '<div style="margin-bottom:8px;">'
         + '<div style="font-size:10px;font-weight:800;color:#64748B;margin-bottom:5px;letter-spacing:.3px;">WARNA LATAR</div>'
-        + '<div style="display:flex;gap:6px;flex-wrap:wrap;">'+warnaOpts+'</div>'
+        + '<div style="display:flex;gap:5px;flex-wrap:wrap;">' + warnaOpts + '</div>'
       + '</div>'
-      // Upload logo gambar
-      + '<div style="margin-top:8px;">'
+      // Logo upload
+      + '<div>'
         + '<div style="font-size:10px;font-weight:800;color:#64748B;margin-bottom:5px;letter-spacing:.3px;">ATAU UPLOAD LOGO GAMBAR</div>'
-        + '<button onclick="triggerIntegrasiLogoUpload('+idx+')" style="width:100%;padding:7px;border-radius:8px;border:1.5px dashed #2563EB;background:#EFF6FF;color:#1E40AF;font-family:\'Nunito\',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">'
-          + (item.logoImg ? '✅ Logo diunggah — klik untuk ganti' : '📁 Upload Logo (JPG/PNG max 500KB)')
-        + '</button>'
-        + (item.logoImg ? '<div style="margin-top:5px;text-align:center;"><img src="'+item.logoImg+'" style="height:32px;border-radius:6px;border:1.5px solid #E2E8F0;"></div>' : '')
+        + '<button onclick="triggerIntegrasiLogoUpload(' + idx + ')" '
+          + 'style="width:100%;padding:7px;border-radius:8px;border:1.5px dashed #2563EB;background:#EFF6FF;color:#1E40AF;font-family:Nunito,sans-serif;font-size:11px;font-weight:800;cursor:pointer;">'
+          + logoBtnTxt + '</button>'
+        + logoPreview
       + '</div>'
     + '</div>';
   }).join('');
 }
 
-function updateIntegrasiIcon(idx, emoji) {
+// Live update integrasiList as user types
+function updateIntegrasiLive(input) {
+  var idx   = parseInt(input.getAttribute('data-idx'));
+  var field = input.getAttribute('data-field');
+  if (!isNaN(idx) && integrasiList[idx] && field) {
+    integrasiList[idx][field] = input.value;
+  }
+}
+
+// Pick emoji - use textContent passed from onclick
+function pickIntegrasiEmoji(idx, emoji) {
   if (integrasiList[idx]) {
-    integrasiList[idx].icon = emoji;
-    integrasiList[idx].logoImg = null; // clear uploaded image if emoji selected
+    integrasiList[idx].icon    = emoji;
+    integrasiList[idx].logoImg = null; // clear uploaded logo if emoji chosen
   }
   renderEditIntegrasiList();
 }
 
-function updateIntegrasiWarna(idx, warna) {
+// Pick warna background
+function pickIntegrasiWarna(idx, warna) {
   if (integrasiList[idx]) integrasiList[idx].warna = warna;
   renderEditIntegrasiList();
 }
 
-function updateIntegrasi(idx, field, val) {
-  if (integrasiList[idx]) integrasiList[idx][field] = val;
+// Save to Supabase + localStorage, show toast, return to grid
+async function simpanIntegrasi() {
+  var btns = document.querySelectorAll('#btn-simpan-integrasi-top, #btn-simpan-integrasi-bottom');
+  btns.forEach(function(b){ b.textContent = '⏳ Menyimpan...'; b.disabled = true; });
+
+  var val = JSON.stringify(integrasiList);
+
+  // Always backup to localStorage first (works offline)
+  try { localStorage.setItem('integrasiLinks_v2', val); } catch(e) {}
+
+  // Upsert to Supabase
+  var saved = false;
+  try {
+    await sbFetch('/rest/v1/app_settings', {
+      method: 'POST',
+      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: 'integrasi_links', value: val })
+    });
+    saved = true;
+  } catch(e) {
+    try {
+      await sbFetch('/rest/v1/app_settings?key=eq.integrasi_links', {
+        method: 'PATCH',
+        body: JSON.stringify({ value: val })
+      });
+      saved = true;
+    } catch(e2) { console.warn('Supabase integrasi save failed:', e2); }
+  }
+
+  // Restore button labels
+  btns.forEach(function(b){
+    b.textContent = (b.id === 'btn-simpan-integrasi-top') ? '💾 Simpan' : '💾 Simpan & Sinkron';
+    b.disabled = false;
+  });
+
+  // Close edit modal → show updated grid
+  document.getElementById('edit-integrasi-modal').classList.remove('open');
+  renderIntegrasiGrid();
+  document.getElementById('integrasi-modal').classList.add('open');
+
+  if (saved) {
+    showToast('✅ Tersimpan & tersinkron ke semua perangkat!', '#D1FAE5', '#065F46');
+  } else {
+    showToast('💾 Tersimpan lokal. Cek koneksi internet.', '#FEF3C7', '#92400E');
+  }
 }
 
-function hapusIntegrasiItem(idx) {
-  if (!confirm('Hapus shortcut "' + (integrasiList[idx] ? integrasiList[idx].nama : '') + '"?')) return;
-  integrasiList.splice(idx, 1);
-  renderEditIntegrasiList();
-}
-
-function addIntegrasiItem() {
-  integrasiList.push({ id:'new'+Date.now(), icon:'🔗', nama:'Layanan Baru', url:'https://', warna:'#2563EB', logoImg: null });
-  renderEditIntegrasiList();
-}
-
+// ── Upload logo gambar untuk item integrasi ──
 function triggerIntegrasiLogoUpload(idx) {
+  // File: protocol blocks FileReader on some browsers when opened locally
+  // Use input file trigger safely
   var input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*';
+  input.accept = 'image/jpeg,image/png,image/gif,image/webp';
   input.onchange = function(e) {
     var file = e.target.files[0];
     if (!file) return;
-    if (file.size > 500 * 1024) { showToast('⚠️ Max 500KB!', '#FEE2E2', '#991B1B'); return; }
+    if (file.size > 500 * 1024) {
+      showToast('⚠️ Ukuran logo max 500KB!', '#FEE2E2', '#991B1B');
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function(ev) {
       if (integrasiList[idx]) {
         integrasiList[idx].logoImg = ev.target.result;
-        integrasiList[idx].icon = ''; // clear emoji
+        integrasiList[idx].icon   = ''; // clear emoji when logo uploaded
       }
       renderEditIntegrasiList();
-      showToast('✅ Logo diunggah!', '#D1FAE5', '#065F46');
+      showToast('✅ Logo diunggah! Klik Simpan untuk menyimpan.', '#D1FAE5', '#065F46');
+    };
+    reader.onerror = function() {
+      showToast('⚠️ Gagal membaca file. Coba lagi.', '#FEE2E2', '#991B1B');
     };
     reader.readAsDataURL(file);
   };
+  document.body.appendChild(input);
   input.click();
+  document.body.removeChild(input);
 }
 
-function simpanIntegrasi() {
-  // Collect latest values from inputs inside edit-integrasi-list
-  var rows = document.querySelectorAll('#edit-integrasi-list > div');
-  rows.forEach(function(row, idx) {
-    var inputs = row.querySelectorAll('input[type=text]');
-    if (inputs[0] && integrasiList[idx]) integrasiList[idx].nama = inputs[0].value.trim() || integrasiList[idx].nama;
-    if (inputs[1] && integrasiList[idx]) integrasiList[idx].url  = inputs[1].value.trim() || integrasiList[idx].url;
-  });
-  saveIntegrasi();
-  document.getElementById('edit-integrasi-modal').classList.remove('open');
-  // Re-open integrasi modal with fresh data
-  loadIntegrasi();
-  renderIntegrasiGrid();
-  document.getElementById('integrasi-modal').classList.add('open');
-  showToast('✅ Integrasi berhasil disimpan!', '#D1FAE5', '#065F46');
+// ── Hapus item integrasi ──
+function hapusIntegrasiItem(idx) {
+  var nama = (integrasiList[idx] ? integrasiList[idx].nama : '') || 'item ini';
+  if (!confirm('Hapus shortcut "' + nama + '"?')) return;
+  integrasiList.splice(idx, 1);
+  renderEditIntegrasiList();
+  showToast('🗑️ Shortcut dihapus.', '#FEF3C7', '#92400E');
 }
+
+// ── Tambah item baru ──
+function addIntegrasiItem() {
+  integrasiList.push({
+    id: 'new' + Date.now(),
+    icon: '🔗',
+    nama: 'Layanan Baru',
+    url: 'https://',
+    warna: '#2563EB',
+    logoImg: null
+  });
+  renderEditIntegrasiList();
+  // Scroll ke bawah agar item baru terlihat
+  var list = document.getElementById('edit-integrasi-list');
+  if (list) setTimeout(function(){ list.scrollTop = list.scrollHeight; }, 100);
+}
+
+
+
+
 
 // Render grid with logo image support
 function renderIntegrasiGrid() {
@@ -6360,24 +6503,25 @@ function closeEditIntegrasiModal(e) {
 // TEMPLATE EXCEL — Download via pure JS (no library needed)
 // ══════════════════════════════════════════════════════════
 function downloadTemplateExcel() {
-  // Build CSV with BOM for Excel compatibility
+  // Template SIMPOLIN — hanya 3 kolom wajib
   var bom = '\uFEFF';
-  var header = 'NISN,NAMA_LENGKAP,KELAS,JENIS_KELAMIN,TEMPAT_LAHIR,TANGGAL_LAHIR,ALAMAT,NO_HP_ORTU';
+  var header = 'NISN,NAMA_SISWA,KELAS';
   var contoh = [
-    '3012345678,Ahmad Fauzan,9A,L,Surabaya,2010-05-15,Jl. Merdeka No.1,081234567890',
-    '3087654321,Siti Rahayu,9B,P,Malang,2010-08-22,Jl. Kenanga No.5,082198765432',
-    '3056781234,Budi Pratama,9A,L,Sidoarjo,2010-03-10,Jl. Melati No.12,085312345678',
+    '3012345678,Ahmad Fauzan,9A',
+    '3087654321,Siti Rahayu,9B',
+    '3056781234,Budi Pratama,9A',
+    '3098765432,Dewi Lestari,9C',
+    '3011223344,Rizky Ramadan,8A',
   ];
-  // Petunjuk pengisian
   var petunjuk = [
     '',
     '--- PETUNJUK PENGISIAN ---',
-    'NISN: 10 digit angka (wajib & unik)',
-    'NAMA_LENGKAP: Nama lengkap siswa',
-    'KELAS: 7A/7B/7C/8A/8B/8C/9A/9B/9C',
-    'JENIS_KELAMIN: L atau P',
-    'TANGGAL_LAHIR: Format YYYY-MM-DD (contoh: 2010-05-15)',
-    'PASSWORD LOGIN SISWA: default = NISN siswa',
+    'NISN       : 10 digit angka (wajib dan unik)',
+    'NAMA_SISWA : Nama lengkap siswa',
+    'KELAS      : 7A / 7B / 7C / 8A / 8B / 8C / 9A / 9B / 9C',
+    '',
+    'Catatan: Password login siswa = NISN siswa (otomatis)',
+    'Hapus baris contoh dan petunjuk ini sebelum upload',
   ];
   var csvContent = bom + [header].concat(contoh).concat(petunjuk).join('\n');
   var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -6387,7 +6531,7 @@ function downloadTemplateExcel() {
   a.download = 'Template_Siswa_SIMPOLIN.csv';
   a.click();
   URL.revokeObjectURL(url);
-  showToast('✅ Template berhasil didownload! Buka dengan Excel.', '#D1FAE5', '#065F46');
+  showToast('\u2705 Template didownload! Isi kolom NISN, Nama Siswa, Kelas lalu upload.', '#D1FAE5', '#065F46');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -6410,39 +6554,45 @@ function triggerExcelUpload() {
 }
 
 async function processExcelData(content, filename) {
-  showToast('⏳ Memproses data siswa...', '#DBEAFE', '#1E40AF');
+  showToast('\u23f3 Memproses data siswa...', '#DBEAFE', '#1E40AF');
   try {
-    // Parse CSV
-    var lines = content.replace(/\r/g, '').split('\n').filter(function(l) {
-      return l.trim() && !l.startsWith('---') && l.split(',').length >= 3;
+    // Parse CSV — support BOM
+    var raw = content.replace(/^\uFEFF/, '').replace(/\r/g, '');
+    var lines = raw.split('\n').filter(function(l) {
+      return l.trim() && !l.startsWith('---') && !l.startsWith('Catatan') && !l.startsWith('Hapus') && l.split(',').length >= 2;
     });
-    if (lines.length < 2) { showToast('⚠️ File kosong atau format salah!', '#FEE2E2', '#991B1B'); return; }
+    if (lines.length < 2) { showToast('\u26a0\ufe0f File kosong atau format salah!', '#FEE2E2', '#991B1B'); return; }
 
     var headers = lines[0].split(',').map(function(h){ return h.trim().toUpperCase().replace(/[^A-Z_]/g,''); });
     var nisnIdx  = headers.indexOf('NISN');
-    var namaIdx  = headers.indexOf('NAMA_LENGKAP');
+    // Support both NAMA_SISWA (new) and NAMA_LENGKAP (old)
+    var namaIdx  = headers.indexOf('NAMA_SISWA');
+    if (namaIdx < 0) namaIdx = headers.indexOf('NAMA_LENGKAP');
+    if (namaIdx < 0) namaIdx = headers.indexOf('NAMA');
     var kelasIdx = headers.indexOf('KELAS');
-    var tglIdx   = headers.indexOf('TANGGAL_LAHIR');
 
     if (nisnIdx < 0 || namaIdx < 0 || kelasIdx < 0) {
-      showToast('⚠️ Kolom NISN/NAMA_LENGKAP/KELAS tidak ditemukan!', '#FEE2E2', '#991B1B');
+      showToast('\u26a0\ufe0f Kolom NISN / NAMA_SISWA / KELAS tidak ditemukan! Gunakan template resmi.', '#FEE2E2', '#991B1B');
       return;
     }
 
     var siswaList = [];
     for (var i = 1; i < lines.length; i++) {
       var cols = lines[i].split(',');
-      var nisn = (cols[nisnIdx]||'').trim().replace(/\D/g,'');
-      var nama = (cols[namaIdx]||'').trim();
-      var kelas= (cols[kelasIdx]||'').trim().toUpperCase();
-      var tgl  = tglIdx >= 0 ? (cols[tglIdx]||'').trim() : '';
+      var nisn  = (cols[nisnIdx]  || '').trim().replace(/\D/g, '');
+      var nama  = (cols[namaIdx]  || '').trim();
+      var kelas = (cols[kelasIdx] || '').trim().toUpperCase();
       if (!nisn || !nama || nisn.length < 6) continue;
-      siswaList.push({ nisn, nama, kelas, tanggal_lahir: tgl, password: nisn });
+      // Password default = NISN
+      siswaList.push({ nisn: nisn, nama: nama, kelas: kelas, password: nisn });
     }
 
-    if (siswaList.length === 0) { showToast('⚠️ Tidak ada data valid!', '#FEE2E2', '#991B1B'); return; }
+    if (siswaList.length === 0) { showToast('\u26a0\ufe0f Tidak ada data valid! Pastikan format benar.', '#FEE2E2', '#991B1B'); return; }
 
-    // Upload ke Supabase satu per satu (upsert by nisn)
+    // Preview sebelum upload
+    showToast('\u23f3 Mengupload ' + siswaList.length + ' siswa ke Supabase...', '#DBEAFE', '#1E40AF');
+
+    // Upload ke Supabase — upsert by nisn
     var berhasil = 0, gagal = 0;
     for (var j = 0; j < siswaList.length; j++) {
       try {
@@ -6452,301 +6602,80 @@ async function processExcelData(content, filename) {
           body: JSON.stringify(siswaList[j])
         });
         berhasil++;
-      } catch(e2) { gagal++; }
+      } catch(e2) { gagal++; console.warn('Gagal upload siswa:', siswaList[j].nisn, e2); }
     }
 
-    showToast('✅ ' + berhasil + ' siswa berhasil diimport!' + (gagal>0?' ('+gagal+' gagal)':''), '#D1FAE5', '#065F46');
-    // Reload tabel siswa
-    setTimeout(function(){ loadSiswaNyata(); updateTeacherStats(); }, 500);
+    var msg = '\u2705 ' + berhasil + ' siswa berhasil diimport!';
+    if (gagal > 0) msg += ' (' + gagal + ' gagal — mungkin duplikat)';
+    showToast(msg, '#D1FAE5', '#065F46');
+
+    // Update UI tabel siswa
+    setTimeout(function(){ loadSiswaNyata(); updateTeacherStats(); }, 600);
 
   } catch(err) {
-    showToast('⚠️ Gagal proses file: ' + err.message, '#FEE2E2', '#991B1B');
+    showToast('\u26a0\ufe0f Gagal proses file: ' + (err.message || err), '#FEE2E2', '#991B1B');
   }
 }
 
 // ══════════════════════════════════════════════════════════
-// INTEGRASI PERMANEN — Simpan ke Supabase (bukan localStorage)
-// Agar bisa diakses dari HP/browser lain
+// INTEGRASI — Supabase full sync (multi-device)
+// Tabel: app_settings (key TEXT PRIMARY KEY, value TEXT)
+// SQL: CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT);
 // ══════════════════════════════════════════════════════════
-var INTEGRASI_TABLE = '/rest/v1/app_settings?key=eq.integrasi_links';
+
+var INTEGRASI_KEY = 'integrasi_links';
+var _integrasiSaving = false;
 
 async function loadIntegrasi() {
-  // Coba dari Supabase dulu (permanent, multi-device)
+  // ALWAYS load from Supabase first — agar sync semua device
   try {
-    var data = await sbFetch(INTEGRASI_TABLE + '&select=value');
+    var data = await sbFetch('/rest/v1/app_settings?key=eq.' + INTEGRASI_KEY + '&select=value');
     if (data && data.length > 0 && data[0].value) {
       integrasiList = JSON.parse(data[0].value);
-      return;
+      return; // Supabase berhasil — tidak perlu localStorage
     }
-  } catch(e) {}
-  // Fallback ke localStorage
+  } catch(e) {
+    console.warn('loadIntegrasi: Supabase gagal, coba localStorage:', e.message);
+  }
+  // Fallback localStorage hanya jika Supabase gagal total (offline)
   try {
-    var saved = localStorage.getItem('integrasiLinks');
+    var saved = localStorage.getItem('integrasiLinks_v2');
     if (saved) { integrasiList = JSON.parse(saved); return; }
-  } catch(e) {}
-  // Default
-  integrasiList = DEFAULT_INTEGRASI.slice();
+  } catch(e2) {}
+  // Default bawaan
+  integrasiList = DEFAULT_INTEGRASI.map(function(x){ return Object.assign({}, x, { logoImg: null }); });
 }
 
 async function saveIntegrasi() {
+  if (_integrasiSaving) return; // prevent double-save
+  _integrasiSaving = true;
   var val = JSON.stringify(integrasiList);
-  // Simpan ke localStorage (instant)
-  try { localStorage.setItem('integrasiLinks', val); } catch(e) {}
-  // Simpan ke Supabase (permanent & multi-device)
+  // Simpan ke localStorage (instant, offline backup)
+  try { localStorage.setItem('integrasiLinks_v2', val); } catch(e) {}
+  // Simpan ke Supabase — UPSERT (insert or update)
+  var saved = false;
   try {
-    // Coba upsert ke tabel app_settings
     await sbFetch('/rest/v1/app_settings', {
       method: 'POST',
       headers: { 'Prefer': 'resolution=merge-duplicates' },
-      body: JSON.stringify({ key: 'integrasi_links', value: val })
+      body: JSON.stringify({ key: INTEGRASI_KEY, value: val })
     });
+    saved = true;
   } catch(e) {
-    // Tabel mungkin belum ada — tetap tersimpan di localStorage
-    console.log('Supabase save integrasi failed, using localStorage only:', e.message);
-  }
-}
-
-// ══════════════════════════════════════════════════════════
-// NOTIFIKASI GURU — Enhanced dengan demo data fallback
-// ══════════════════════════════════════════════════════════
-function openNotif() {
-  var overlay = document.getElementById('notif-overlay');
-  if (!overlay) return;
-  overlay.classList.add('open');
-  // Clear badge
-  var badge = document.getElementById('tea-notif-badge');
-  if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
-  _lastNotifCount = 0;
-  loadTeacherNotif();
-}
-
-async function loadTeacherNotif() {
-  var el = document.getElementById('notif-list-content');
-  if (!el) return;
-  el.innerHTML = '<div style="text-align:center;padding:16px;color:#64748B;font-size:12px;">⏳ Memuat notifikasi...</div>';
-
-  try {
-    var items = [];
-
-    // 1. Exam logs
+    // Coba PATCH jika POST gagal
     try {
-      var logData = await sbFetch('/rest/v1/exam_logs?select=*&order=created_at.desc&limit=15');
-      if (logData && logData.length > 0) {
-        logData.forEach(function(log) {
-          var icon='🔔', title=log.event_type||'Aktivitas', body=log.siswa_name||'', dot='nd-read';
-          var waktu = log.created_at ? new Date(log.created_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-          if (log.event_type==='exam_cancelled'||log.event_type==='violation') { icon='🚫'; title='Pelanggaran — '+(log.siswa_name||'-'); body=(log.data&&log.data.reason)||'Pelanggaran ujian'; dot='nd-new'; }
-          else if (log.event_type==='retry_request') { icon='📨'; title='Minta Ujian Ulang — '+(log.siswa_name||'-'); body=(log.data&&log.data.alasan)||''; dot='nd-new'; }
-          else if (log.event_type==='exam_finished') { icon='✅'; title='Selesai Ujian — '+(log.siswa_name||'-'); body='Nilai: '+(log.data&&log.data.score!=null?log.data.score:'?'); dot='nd-new'; }
-          else if (log.event_type==='exam_started') { icon='📝'; title='Mulai Ujian — '+(log.siswa_name||'-'); body='Siswa mulai mengerjakan ujian'; }
-          else if (log.event_type==='student_login') { icon='👤'; title='Login Siswa — '+(log.siswa_name||'-'); body=''; }
-          items.push({ icon, title, body, dot, waktu, ts: log.created_at||'' });
-        });
-      }
-    } catch(e2) {}
-
-    // 2. Tugas yang baru dikumpulkan
-    try {
-      var submitData = await sbFetch('/rest/v1/tugas_submit?select=*&order=submitted_at.desc&limit=10');
-      if (submitData && submitData.length > 0) {
-        submitData.forEach(function(s) {
-          var waktu2 = s.submitted_at ? new Date(s.submitted_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-          items.push({ icon:'✍️', title:'Tugas Dikumpulkan — '+(s.siswa_nama||'Siswa'), body:'📎 '+(s.file_url||'File tugas'), dot:'nd-new', waktu: waktu2, ts: s.submitted_at||'' });
-        });
-      }
-    } catch(e3) {}
-
-    // Sort by time desc
-    items.sort(function(a,b){ return (b.ts||'')>(a.ts||'')?1:-1; });
-
-    // Jika tidak ada data dari Supabase, tampilkan info panduan
-    if (items.length === 0) {
-      el.innerHTML =
-        '<div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:14px;margin-bottom:10px;">'
-        + '<div style="font-size:13px;font-weight:800;color:#1E40AF;margin-bottom:6px;">ℹ️ Cara Notifikasi Bekerja</div>'
-        + '<div style="font-size:11px;color:#1E40AF;line-height:1.7;">'
-        + '🟢 Notifikasi akan muncul otomatis saat:<br>'
-        + '• Siswa login ke aplikasi<br>'
-        + '• Siswa mulai mengerjakan ujian<br>'
-        + '• Siswa menyelesaikan ujian<br>'
-        + '• Siswa mengumpulkan tugas<br>'
-        + '• Ada pelanggaran ujian<br><br>'
-        + '<strong>Belum ada aktivitas siswa.</strong> Pastikan siswa sudah login.'
-        + '</div></div>'
-        + '<button onclick="loadTeacherNotif()" style="width:100%;padding:10px;border-radius:10px;border:1.5px solid #E2E8F0;background:#F8FAFC;color:#64748B;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🔄 Refresh</button>';
-      return;
-    }
-
-    el.innerHTML = items.slice(0,20).map(function(item) {
-      return '<div class="notif-item"><div class="notif-dot '+(item.dot||'nd-read')+'"></div>'
-        + '<div class="notif-ico">'+item.icon+'</div>'
-        + '<div class="notif-txt"><div class="nt">'+item.title+'</div>'
-        + (item.body?'<div class="nb">'+item.body+'</div>':'')
-        + '<div class="ntm">🕐 '+item.waktu+'</div></div></div>';
-    }).join('');
-
-  } catch(e) {
-    el.innerHTML = '<div style="text-align:center;padding:14px;color:#991B1B;font-size:12px;">⚠️ Gagal memuat. Cek koneksi Supabase.</div>'
-      + '<button onclick="loadTeacherNotif()" style="width:100%;margin-top:8px;padding:10px;border-radius:10px;border:1.5px solid #E2E8F0;background:#F8FAFC;color:#64748B;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">🔄 Coba Lagi</button>';
-  }
-}
-
-// ══════════════════════════════════════════════════════════
-// NOTIFIKASI SISWA — Enhanced dengan ujian & tugas baru
-// ══════════════════════════════════════════════════════════
-async function loadNotifSiswa(kelasSiswa) {
-  try {
-    var now = new Date();
-    var items = [];
-
-    // Load ujian aktif untuk kelas ini
-    var ujianData = await sbFetch('/rest/v1/ujian?select=*&order=created_at.desc&aktif=eq.true&limit=20');
-    if (ujianData && ujianData.length > 0) {
-      var filtered = ujianData.filter(function(u) {
-        if (!kelasSiswa) return true;
-        var kls = u.kelas;
-        if (!kls || kls.length === 0) return true;
-        if (Array.isArray(kls)) return kls.indexOf(kelasSiswa) !== -1;
-        return typeof kls === 'string' && kls.indexOf(kelasSiswa) !== -1;
+      await sbFetch('/rest/v1/app_settings?key=eq.' + INTEGRASI_KEY, {
+        method: 'PATCH',
+        body: JSON.stringify({ value: val })
       });
-      filtered = deduplicateUjian(filtered);
-      stuNotifList = filtered;
-      filtered.forEach(function(u) {
-        var created = u.created_at ? new Date(u.created_at) : now;
-        var isNew = (now - created) < 24 * 3600 * 1000;
-        if (isNew) items.push({ type:'ujian', data:u });
-      });
+      saved = true;
+    } catch(e2) {
+      console.warn('saveIntegrasi Supabase gagal:', e2.message);
+      showToast('\u26a0\ufe0f Gagal sync. Cek koneksi internet.', '#FEF3C7', '#92400E');
     }
-
-    // Load tugas baru
-    try {
-      var tugasData = await sbFetch('/rest/v1/tugas?select=*&order=created_at.desc&aktif=eq.true&limit=10');
-      if (tugasData) {
-        tugasData.forEach(function(t) {
-          var kls = Array.isArray(t.kelas) ? t.kelas : (t.kelas ? [t.kelas] : []);
-          if (kls.length > 0 && kelasSiswa && kls.indexOf(kelasSiswa) === -1) return;
-          var created = t.created_at ? new Date(t.created_at) : now;
-          var isNew = (now - created) < 48 * 3600 * 1000;
-          if (isNew) items.push({ type:'tugas', data:t });
-        });
-      }
-    } catch(e2) {}
-
-    stuNotifUnread = items.length;
-
-    // Update badge lonceng siswa
-    var bellBadge = document.getElementById('stu-bell-badge');
-    if (bellBadge) {
-      if (stuNotifUnread > 0) {
-        bellBadge.textContent = stuNotifUnread;
-        bellBadge.style.display = 'flex';
-      } else {
-        bellBadge.style.display = 'none';
-      }
-    }
-
-  } catch(e) { console.log('loadNotifSiswa error:', e); }
-}
-
-function openStuNotif() {
-  var overlay = document.getElementById('stu-notif-overlay');
-  if (!overlay) return;
-  overlay.classList.add('open');
-  var kelas = '';
-  try { kelas = localStorage.getItem('stuKelas') || ''; } catch(e){}
-  loadNotifSiswa(kelas).then(function(){ renderStuNotif(); });
-  // Clear badge
-  stuNotifUnread = 0;
-  var bellBadge = document.getElementById('stu-bell-badge');
-  if (bellBadge) bellBadge.style.display = 'none';
-}
-
-function renderStuNotif() {
-  var listEl = document.getElementById('stu-notif-content');
-  if (!listEl) return;
-
-  var allItems = [];
-
-  // Ujian
-  if (stuNotifList && stuNotifList.length > 0) {
-    stuNotifList.forEach(function(u) {
-      var now = new Date();
-      var mulai = u.mulai_at ? new Date(u.mulai_at) : now;
-      var isAktif = mulai <= now;
-      var mulaiStr = mulai.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      allItems.push(
-        '<div class="notif-item">'
-        + '<div class="notif-dot nd-new"></div>'
-        + '<div class="notif-ico">📝</div>'
-        + '<div class="notif-txt">'
-          + '<div class="nt">'+(isAktif?'🟢 Ujian Aktif':'🟣 Ujian Akan Datang')+' — '+u.judul+'</div>'
-          + '<div class="nb">📚 '+(u.mapel||'')+' • ⏱ '+(u.durasi_menit||60)+' menit</div>'
-          + '<div class="ntm">📅 '+mulaiStr+'</div>'
-        + '</div></div>'
-      );
-    });
   }
-
-  if (allItems.length === 0) {
-    listEl.innerHTML =
-      '<div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:14px;margin-bottom:10px;">'
-      + '<div style="font-size:13px;font-weight:800;color:#1E40AF;margin-bottom:6px;">ℹ️ Belum ada pemberitahuan</div>'
-      + '<div style="font-size:11px;color:#1E40AF;line-height:1.7;">'
-      + 'Notifikasi akan muncul saat:<br>'
-      + '• Guru membuat ujian baru<br>'
-      + '• Guru membuat tugas baru<br>'
-      + '• Ada pengumuman dari guru'
-      + '</div></div>';
-    return;
-  }
-
-  listEl.innerHTML = allItems.join('');
-}
-
-// ══════════════════════════════════════════════════════════
-// NOTIF POLLING — Guru & Siswa
-// ══════════════════════════════════════════════════════════
-var _teaNotifInterval = null;
-var _lastNotifCount = 0;
-
-function startNotifPolling() {
-  if (_teaNotifInterval) clearInterval(_teaNotifInterval);
-  checkNewTeacherNotifs();
-  _teaNotifInterval = setInterval(checkNewTeacherNotifs, 30000);
-}
-
-async function checkNewTeacherNotifs() {
-  try {
-    var count = 0;
-    try {
-      var logData = await sbFetch('/rest/v1/exam_logs?select=id&order=created_at.desc&limit=50');
-      count += logData ? logData.length : 0;
-    } catch(e) {}
-    try {
-      var submitData = await sbFetch('/rest/v1/tugas_submit?select=id&order=submitted_at.desc&limit=20');
-      count += submitData ? submitData.length : 0;
-    } catch(e) {}
-
-    if (count > _lastNotifCount && _lastNotifCount > 0) {
-      var diff = count - _lastNotifCount;
-      var badge = document.getElementById('tea-notif-badge');
-      if (badge) { badge.textContent = diff; badge.style.display = 'flex'; }
-      showToast('🔔 Ada ' + diff + ' notifikasi baru!', '#DBEAFE', '#1E40AF');
-    }
-    _lastNotifCount = count;
-  } catch(e) {}
-}
-
-// Lonceng siswa polling
-function startStuPolling(kelasSiswa) {
-  loadNotifSiswa(kelasSiswa);
-  setInterval(function() {
-    loadNotifSiswa(kelasSiswa);
-    var ujianPanel = document.getElementById('stu-ujian');
-    if (ujianPanel && ujianPanel.classList.contains('active')) {
-      loadUjianForSiswa(kelasSiswa);
-    }
-  }, 30000);
+  _integrasiSaving = false;
+  return saved;
 }
 
 </script>
