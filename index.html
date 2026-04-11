@@ -1848,16 +1848,36 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
      MODAL TAMBAH MATERI VIDEO
 ══════════════════════════════ -->
 <div class="logo-modal-overlay" id="add-materi-modal" onclick="closeAddMateriModal(event)">
-  <div class="logo-modal-box">
-    <h3>📚 Tambah Materi Video</h3>
-    <p style="color:var(--muted);font-size:12px;margin-bottom:14px;">Paste link YouTube atau Google Drive</p>
+  <div class="logo-modal-box" style="max-height:90vh;overflow-y:auto;">
+    <h3>📚 Tambah Materi</h3>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:14px;">Isi judul, link, dan/atau upload file materi</p>
     <div class="s-field">
       <label>JUDUL MATERI *</label>
       <input type="text" id="materi-judul" placeholder="Contoh: Persamaan Kuadrat Bab 5">
     </div>
     <div class="s-field">
-      <label>LINK VIDEO *</label>
+      <label>LINK <span style="font-size:10px;color:var(--muted);font-weight:600;">(opsional)</span></label>
       <input type="url" id="materi-link" placeholder="https://youtu.be/... atau https://drive.google.com/...">
+      <div style="font-size:10px;color:var(--muted);margin-top:4px;font-weight:600;">YouTube: youtu.be/... &nbsp;|&nbsp; Google Drive: drive.google.com/file/d/.../view</div>
+    </div>
+    <div class="s-field">
+      <label>FILE <span style="font-size:10px;color:var(--muted);font-weight:600;">(opsional — gambar, dokumen, video)</span></label>
+      <div id="materi-file-dropzone" onclick="document.getElementById('materi-file-input').click()"
+        style="border:2px dashed #CBD5E1;border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:#F8FAFC;transition:border-color .2s;">
+        <div style="font-size:24px;margin-bottom:6px;">📁</div>
+        <div id="materi-file-label" style="font-size:12px;font-weight:700;color:#64748B;">Klik atau seret file ke sini</div>
+        <div style="font-size:10px;color:#94A3B8;margin-top:3px;font-weight:600;">PDF, Word, Excel, gambar, video — maks. 5MB</div>
+      </div>
+      <input type="file" id="materi-file-input" accept="*/*" style="display:none;"
+        onchange="handleMateriFile(this)">
+      <div id="materi-file-preview" style="display:none;margin-top:8px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;padding:10px 12px;display:none;align-items:center;gap:8px;">
+        <span id="materi-file-icon" style="font-size:20px;">📄</span>
+        <div style="flex:1;min-width:0;">
+          <div id="materi-file-name" style="font-size:12px;font-weight:800;color:#065F46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">-</div>
+          <div id="materi-file-size" style="font-size:10px;color:#059669;font-weight:600;margin-top:2px;">-</div>
+        </div>
+        <button onclick="clearMateriFile()" style="background:none;border:none;font-size:16px;cursor:pointer;color:#991B1B;padding:0 4px;">✕</button>
+      </div>
     </div>
     <div class="s-field">
       <label>MATA PELAJARAN</label>
@@ -1866,14 +1886,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
         <option>Bhs. Indonesia</option><option>Bhs. Inggris</option><option>PKN</option>
       </select>
     </div>
-    <div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:10px;padding:10px 12px;margin-bottom:14px;">
-      <div style="font-size:11px;font-weight:800;color:#92400E;">💡 Format Link yang Didukung</div>
-      <div style="font-size:11px;color:#B45309;margin-top:4px;line-height:1.6;">
-        YouTube: youtube.com/watch?v=... atau youtu.be/...<br>
-        Google Drive: drive.google.com/file/d/.../view
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;">
+    <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="modal-cancel" onclick="closeAddMateriModal()">Batal</button>
       <button class="modal-save" onclick="simpanMateri()">💾 Tambah Materi</button>
     </div>
@@ -4508,30 +4521,155 @@ async function simpanUjian() {
 }
 
 // ── MODAL TAMBAH MATERI ──
-function openAddMateriModal() { document.getElementById('add-materi-modal').classList.add('open'); }
-function closeAddMateriModal(e) {
-  if (!e || e.target === document.getElementById('add-materi-modal'))
-    document.getElementById('add-materi-modal').classList.remove('open');
+function openAddMateriModal() {
+  resetMateriModal();
+  document.getElementById('add-materi-modal').classList.add('open');
 }
+function closeAddMateriModal(e) {
+  if (!e || e.target === document.getElementById('add-materi-modal')) {
+    document.getElementById('add-materi-modal').classList.remove('open');
+    resetMateriModal();
+  }
+}
+// ── File handler untuk materi ──
+var _materiFileData = null; // { name, size, type, base64 }
+
+function handleMateriFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('⚠️ File maksimal 5MB!', '#FEE2E2', '#991B1B');
+    input.value = '';
+    return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    _materiFileData = { name: file.name, size: file.size, type: file.type, base64: ev.target.result };
+    // Update UI dropzone
+    var dropzone = document.getElementById('materi-file-dropzone');
+    if (dropzone) dropzone.style.borderColor = '#059669';
+    var label = document.getElementById('materi-file-label');
+    if (label) label.textContent = 'File dipilih ✅';
+    // Tampilkan preview
+    var preview = document.getElementById('materi-file-preview');
+    var nameEl  = document.getElementById('materi-file-name');
+    var sizeEl  = document.getElementById('materi-file-size');
+    var iconEl  = document.getElementById('materi-file-icon');
+    if (preview) { preview.style.display = 'flex'; }
+    if (nameEl)  nameEl.textContent = file.name;
+    if (sizeEl)  sizeEl.textContent = (file.size / 1024).toFixed(0) + ' KB';
+    // Pilih ikon berdasarkan tipe file
+    var icon = '📄';
+    if (file.type.startsWith('image/'))          icon = '🖼️';
+    else if (file.type.includes('pdf'))           icon = '📕';
+    else if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) icon = '📝';
+    else if (file.type.includes('sheet') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) icon = '📊';
+    else if (file.type.startsWith('video/'))      icon = '🎬';
+    else if (file.type.startsWith('audio/'))      icon = '🎵';
+    if (iconEl) iconEl.textContent = icon;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearMateriFile() {
+  _materiFileData = null;
+  var input = document.getElementById('materi-file-input');
+  if (input) input.value = '';
+  var dropzone = document.getElementById('materi-file-dropzone');
+  if (dropzone) dropzone.style.borderColor = '#CBD5E1';
+  var label = document.getElementById('materi-file-label');
+  if (label) label.textContent = 'Klik atau seret file ke sini';
+  var preview = document.getElementById('materi-file-preview');
+  if (preview) preview.style.display = 'none';
+}
+
+// Drag-and-drop support untuk materi file dropzone
+document.addEventListener('DOMContentLoaded', function() {
+  var dropzone = document.getElementById('materi-file-dropzone');
+  if (!dropzone) return;
+  dropzone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    dropzone.style.borderColor = '#2563EB';
+    dropzone.style.background  = '#EFF6FF';
+  });
+  dropzone.addEventListener('dragleave', function() {
+    dropzone.style.borderColor = '#CBD5E1';
+    dropzone.style.background  = '#F8FAFC';
+  });
+  dropzone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    dropzone.style.borderColor = '#CBD5E1';
+    dropzone.style.background  = '#F8FAFC';
+    var file = e.dataTransfer.files[0];
+    if (!file) return;
+    var fakeInput = { files: [file] };
+    handleMateriFile(fakeInput);
+  });
+});
+
+function resetMateriModal() {
+  document.getElementById('materi-judul').value = '';
+  document.getElementById('materi-link').value  = '';
+  clearMateriFile();
+}
+
 async function simpanMateri() {
   var judul = document.getElementById('materi-judul').value.trim();
   var link  = document.getElementById('materi-link').value.trim();
   var mapel = document.getElementById('materi-mapel').value;
-  if (!judul) { showToast('⚠️ Judul materi wajib diisi!', '#FEE2E2', '#991B1B'); return; }
-  if (!link)  { showToast('⚠️ Link video wajib diisi!', '#FEE2E2', '#991B1B'); return; }
 
-  var tipe = link.includes('youtube') || link.includes('youtu.be') ? 'video' : 'dokumen';
+  // Validasi: judul wajib, link ATAU file harus ada salah satu
+  if (!judul) { showToast('⚠️ Judul materi wajib diisi!', '#FEE2E2', '#991B1B'); return; }
+  if (!link && !_materiFileData) {
+    showToast('⚠️ Isi minimal salah satu: Link atau File!', '#FEE2E2', '#991B1B'); return;
+  }
+
+  // Tentukan tipe materi
+  var tipe = 'dokumen';
+  if (link) {
+    if (link.includes('youtube') || link.includes('youtu.be')) tipe = 'video';
+    else if (link.includes('drive.google.com')) tipe = 'gdrive';
+  }
+  if (_materiFileData) {
+    if (_materiFileData.type.startsWith('video/'))      tipe = 'video';
+    else if (_materiFileData.type.startsWith('image/')) tipe = 'gambar';
+    else                                                 tipe = 'dokumen';
+  }
+
+  var btn = document.querySelector('#add-materi-modal .modal-save');
+  if (btn) { btn.textContent = '⏳ Menyimpan...'; btn.disabled = true; }
+
   try {
+    var payload = {
+      judul:      judul,
+      url:        link || null,
+      tipe:       tipe,
+      mapel:      mapel || null,
+      aktif:      true,
+      created_at: new Date().toISOString()
+    };
+    // Kalau ada file, simpan base64 di kolom file_data
+    if (_materiFileData) {
+      payload.file_name = _materiFileData.name;
+      payload.file_type = _materiFileData.type;
+      payload.file_data = _materiFileData.base64;
+    }
+
     await sbFetch('/rest/v1/materi', {
       method: 'POST',
-      body: JSON.stringify({ judul: judul, url: link, tipe: tipe, aktif: true, created_at: new Date().toISOString() })
+      body: JSON.stringify(payload)
     });
+
     document.getElementById('add-materi-modal').classList.remove('open');
-    document.getElementById('materi-judul').value = '';
-    document.getElementById('materi-link').value = '';
+    resetMateriModal();
     showToast('✅ Materi "' + judul + '" berhasil ditambahkan!', '#D1FAE5', '#065F46');
+    // Refresh daftar materi
+    setTimeout(function(){ loadMateriGuru && loadMateriGuru(); }, 400);
   } catch(err) {
-    showToast('⚠️ Gagal simpan. Cek koneksi.', '#FEE2E2', '#991B1B');
+    console.error('simpanMateri error:', err);
+    showToast('⚠️ Gagal simpan. Cek koneksi atau jalankan SQL materi.', '#FEE2E2', '#991B1B');
+  } finally {
+    if (btn) { btn.textContent = '💾 Tambah Materi'; btn.disabled = false; }
   }
 }
 
