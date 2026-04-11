@@ -21,7 +21,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 /* PHONE SHELL */
 .phone{
   width:100%;min-height:100vh;background:var(--bg);
-  border-radius:0;overflow:hidden;position:relative;
+  border-radius:0;overflow:visible;position:relative;
   box-shadow:none;
   display:flex;flex-direction:column;
 }
@@ -157,7 +157,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
   border-top:1.5px solid var(--border);
   box-shadow:0 -4px 20px rgba(0,0,0,.07);
   position:fixed;bottom:0;left:0;right:0;
-  z-index:1000;width:100%;
+  z-index:100;width:100%;
 }
 .bn-item{
   display:flex;flex-direction:column;align-items:center;gap:3px;
@@ -472,8 +472,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
    SETTINGS PANEL
 ════════════════════════════════ */
 .settings-overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,.5);
-  z-index:2000;display:none;align-items:flex-end;
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:9999;display:none;align-items:flex-end;
   animation:fadeIn .2s ease;
 }
 .settings-overlay.open{display:flex;}
@@ -525,8 +525,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 
 /* KOP EDIT MODAL */
 .modal-overlay{
-  position:absolute;inset:0;background:rgba(0,0,0,.5);
-  z-index:300;display:none;align-items:center;justify-content:center;padding:20px;
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:9998;display:none;align-items:center;justify-content:center;padding:20px;
 }
 .modal-overlay.open{display:flex;}
 .modal-box{
@@ -599,7 +599,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 /* LOGO MODAL */
 .logo-modal-overlay {
   position:fixed;inset:0;background:rgba(0,0,0,.6);
-  z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;
+  z-index:9998;display:none;align-items:center;justify-content:center;padding:20px;
 }
 .logo-modal-overlay.open{display:flex;}
 .logo-modal-box {
@@ -1005,7 +1005,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
   <div class="bottom-nav">
     <div class="bn-item active-stu" onclick="switchStuTab('beranda',this)"><div class="bn-icon">🏠</div><div class="bn-label">Beranda</div></div>
     <div class="bn-item" onclick="switchStuTab('materi',this)"><div class="bn-icon">📚</div><div class="bn-label">Materi</div></div>
-    <div class="bn-item" onclick="switchStuTab('tugas',this)"><div class="bn-icon">✍️</div><div class="bn-label">Tugas</div></div>
+    <div class="bn-item" onclick="switchStuTab('tugas',this)"><div class="bn-icon">✍️</div><div class="bn-label">Tugas</div><div class="bn-badge" id="stu-tugas-badge" style="display:none;">0</div></div>
     <div class="bn-item" onclick="switchStuTab('ujian',this)"><div class="bn-icon">📝</div><div class="bn-label">Ujian</div></div>
     <div class="bn-item" onclick="switchStuTab('nilai',this)"><div class="bn-icon">📊</div><div class="bn-label">Nilai</div></div>
     <div class="bn-item" onclick="switchStuTab('pengaturan',this);loadSiswaSetting()"><div class="bn-icon">⚙️</div><div class="bn-label">Setelan</div></div>
@@ -2634,13 +2634,15 @@ function loginGuruSuccess(nama, nip, pass, guruObj) {
     })
   }).catch(function(){});
   showScreen('pg-teacher');
-  // Load foto profil, materi, dan tugas dari Supabase
+  // Load foto profil, materi, tugas dari Supabase + mulai polling notif
   setTimeout(function(){
     restoreGuruPhoto();
     loadViolations();
     loadMateriGuru();
+    loadTugasGuru();
     updateTeacherStats();
-  }, 600);
+    startNotifPolling(); // <-- mulai polling notif guru
+  }, 700);
 }
 
 // Fallback login lokal (offline mode)
@@ -2844,7 +2846,12 @@ function switchStuTab(name, el) {
   if (el) el.classList.add('active-stu');
   try { localStorage.setItem('stuActiveTab', name); } catch(e){}
   if (name === 'ujian')  renderUjianSiswa();
-  if (name === 'tugas')  loadTugasSiswa();
+  if (name === 'tugas') {
+    loadTugasSiswa();
+    // Sembunyikan badge tab tugas saat dibuka
+    var stuTugasBadge = document.getElementById('stu-tugas-badge');
+    if (stuTugasBadge) stuTugasBadge.style.display = 'none';
+  }
   if (name === 'nilai')  loadNilaiSiswa();
   if (name === 'materi') loadMateriSiswa();
 }
@@ -2913,12 +2920,14 @@ function closeSettingsOutside(e) { if(e.target === document.getElementById('sett
 
 // ── Notif Guru ──
 function openNotif() {
+  // Implementasi utama ada di bawah — ini stub awal
   var overlay = document.getElementById('notif-overlay');
   if (!overlay) return;
   overlay.classList.add('open');
   var badge = document.getElementById('tea-notif-badge');
   if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
-  _lastNotifCount = 0;
+  var el = document.getElementById('notif-list-content');
+  if (el) el.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;">⏳ Memuat notifikasi...</div>';
   loadTeacherNotif();
 }
 
@@ -2963,23 +2972,45 @@ async function loadTeacherNotif() {
     }
   } catch(e) { console.warn('loadTeacherNotif exam_logs:', e); }
 
-  // 2. Tugas baru dikumpulkan siswa
+  // 2. Tugas dikumpulkan siswa (belum dinilai = paling penting)
   try {
-    var submitData = await sbFetch('/rest/v1/tugas_submit?select=*&order=submitted_at.desc&limit=10');
+    var submitData = await sbFetch('/rest/v1/tugas_submit?select=*&order=submitted_at.desc&limit=20');
     if (submitData && submitData.length > 0) {
       submitData.forEach(function(s) {
         var waktu = s.submitted_at
           ? new Date(s.submitted_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
           : '';
+        var belumDinilai = !s.nilai && s.nilai !== 0;
         items.push({
-          icon:'✍️', dot:'nd-new',
-          title:'Tugas Dikumpulkan — ' + (s.siswa_nama || 'Siswa'),
-          body: '📎 ' + (s.file_url || 'File tugas'),
+          icon: belumDinilai ? '✍️' : '✅',
+          dot: belumDinilai ? 'nd-new' : 'nd-read',
+          title: (belumDinilai ? '✍️ Tugas Masuk' : '✅ Sudah Dinilai') + ' — ' + (s.siswa_nama || 'Siswa'),
+          body: '📎 ' + (s.file_url || 'File tugas') + (s.komentar ? ' • 💬 ' + s.komentar : ''),
           waktu: waktu, ts: s.submitted_at || ''
         });
       });
     }
   } catch(e) { console.warn('loadTeacherNotif tugas_submit:', e); }
+
+  // 3. Materi yang baru ditambahkan (72 jam terakhir)
+  try {
+    var batas72h = new Date(Date.now() - 72 * 3600 * 1000).toISOString();
+    var materiData = await sbFetch('/rest/v1/materi?select=id,judul,tipe,mapel,created_at&order=created_at.desc&aktif=eq.true&limit=10&created_at=gte.' + batas72h);
+    if (materiData && materiData.length > 0) {
+      materiData.forEach(function(m) {
+        var waktu = m.created_at
+          ? new Date(m.created_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
+          : '';
+        items.push({
+          icon: m.tipe === 'video' ? '🎬' : '📚',
+          dot: 'nd-new',
+          title: '📚 Materi Ditambahkan — ' + (m.judul || '-'),
+          body: (m.mapel ? '📖 ' + m.mapel : '') + ' • Tipe: ' + (m.tipe || 'dokumen').toUpperCase(),
+          waktu: waktu, ts: m.created_at || ''
+        });
+      });
+    }
+  } catch(e) { console.warn('loadTeacherNotif materi:', e); }
 
   // Sort newest first
   items.sort(function(a, b) { return (b.ts > a.ts) ? 1 : -1; });
@@ -4688,10 +4719,13 @@ function updateNotifBadge(count) {
 }
 
 function openNotif() {
+  // Versi lama — digantikan oleh implementasi di bawah
   var overlay = document.getElementById('notif-overlay');
   if (!overlay) return;
   overlay.classList.add('open');
-  renderNotifications();
+  var el = document.getElementById('notif-list-content');
+  if (el) el.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;">⏳ Memuat notifikasi...</div>';
+  loadTeacherNotif();
 }
 
 function renderNotifications() {
@@ -4861,10 +4895,11 @@ async function simpanTugas() {
     document.getElementById('tugas-judul').value = '';
     document.getElementById('tugas-deskripsi').value = '';
     showToast('✅ Tugas "' + judul + '" berhasil dibuat!', '#D1FAE5', '#065F46');
-    // Update badge & refresh list
-    var badge = document.querySelector('#pg-teacher .bn-badge');
-    if (badge) { badge.textContent = (parseInt(badge.textContent)||0)+1; badge.style.display='flex'; }
-    setTimeout(function(){ loadTugasGuru(); updateTeacherStats(); }, 400);
+    setTimeout(function(){
+      loadTugasGuru();
+      updateTeacherStats();
+      checkAndUpdateTeaNotifBadge(); // update badge lonceng guru
+    }, 400);
   } catch(err) {
     showToast('⚠️ Gagal simpan. Cek koneksi internet.', '#FEE2E2', '#991B1B');
   } finally {
@@ -5057,9 +5092,10 @@ async function simpanMateri() {
   try {
     // Jika ada link, simpan sebagai 1 materi
     if (link) {
-      var tipe = 'dokumen';
+      var tipe = 'link';
       if (link.includes('youtube') || link.includes('youtu.be')) tipe = 'video';
       else if (link.includes('drive.google.com')) tipe = 'gdrive';
+      else tipe = 'dokumen';
 
       await sbFetch('/rest/v1/materi', {
         method: 'POST',
@@ -5079,6 +5115,7 @@ async function simpanMateri() {
         var fileTipe = 'dokumen';
         if (fd.type.startsWith('video/'))      fileTipe = 'video';
         else if (fd.type.startsWith('image/')) fileTipe = 'gambar';
+        else if (fd.type.startsWith('audio/')) fileTipe = 'audio';
 
         // Judul: jika lebih dari 1 file, tambahkan nama file ke judul
         var fileJudul = _materiFileData.length > 1
@@ -5108,8 +5145,11 @@ async function simpanMateri() {
     document.getElementById('add-materi-modal').classList.remove('open');
     resetMateriModal();
     showToast('✅ Materi "' + judul + '" berhasil ditambahkan!', '#D1FAE5', '#065F46');
-    // Refresh daftar materi
-    setTimeout(function(){ loadMateriGuru(); }, 400);
+    // Refresh daftar materi + update badge notif
+    setTimeout(function(){
+      loadMateriGuru();
+      checkAndUpdateTeaNotifBadge(); // update badge lonceng
+    }, 400);
   } catch(err) {
     console.error('simpanMateri error:', err);
     showToast('⚠️ Gagal simpan. Cek koneksi atau jalankan SQL materi.', '#FEE2E2', '#991B1B');
@@ -6331,42 +6371,112 @@ var stuNotifUnread = 0;
 
 async function loadNotifSiswa(kelasSiswa) {
   try {
-    // Load ujian baru yang di-publish untuk kelas ini
-    var data = await sbFetch('/rest/v1/ujian?select=*&order=created_at.desc&aktif=eq.true&limit=10');
-    if (!data) return;
-
-    var filtered = data.filter(function(u) {
-      if (!kelasSiswa) return true;
-      var kls = u.kelas;
-      if (!kls || kls.length === 0) return true;
-      if (Array.isArray(kls)) return kls.indexOf(kelasSiswa) !== -1;
-      return typeof kls === 'string' && kls.indexOf(kelasSiswa) !== -1;
-    });
-
-    // Deduplicate
-    filtered = deduplicateUjian(filtered);
-    stuNotifList = filtered;
-
-    // Check for new ujian (created in last 24 hours)
+    var allItems = [];
     var now = new Date();
-    var newUjian = filtered.filter(function(u) {
-      if (!u.created_at) return false;
-      var created = new Date(u.created_at);
-      return (now - created) < 24 * 3600 * 1000;
-    });
+    var batas72h = new Date(now - 72 * 3600 * 1000); // 72 jam terakhir
 
-    stuNotifUnread = newUjian.length;
+    // 1. Ujian aktif/baru untuk kelas ini
+    try {
+      var ujianData = await sbFetch('/rest/v1/ujian?select=*&order=created_at.desc&aktif=eq.true&limit=20');
+      if (ujianData) {
+        var filtered = ujianData.filter(function(u) {
+          if (!kelasSiswa) return true;
+          var kls = u.kelas;
+          if (!kls || kls.length === 0) return true;
+          if (Array.isArray(kls)) return kls.indexOf(kelasSiswa) !== -1;
+          return typeof kls === 'string' && kls.indexOf(kelasSiswa) !== -1;
+        });
+        filtered = deduplicateUjian(filtered);
+        stuNotifList = filtered; // simpan untuk renderStuNotif
+        filtered.forEach(function(u) {
+          var mulai = u.mulai_at ? new Date(u.mulai_at) : now;
+          var isNew = u.created_at && new Date(u.created_at) > batas72h;
+          allItems.push({
+            type: 'ujian', dot: isNew ? 'nd-new' : 'nd-read',
+            icon: '📝', ts: u.created_at || '',
+            judul: u.judul, mapel: u.mapel || '',
+            durasi: u.durasi_menit || 60,
+            mulai_at: u.mulai_at, isNew: isNew
+          });
+        });
+      }
+    } catch(e) { console.log('notif ujian error:', e); }
 
-    // Update bell badge
+    // 2. Tugas baru untuk kelas ini
+    try {
+      var tugasData = await sbFetch('/rest/v1/tugas?select=*&order=created_at.desc&aktif=eq.true&limit=20');
+      if (tugasData) {
+        var filteredT = tugasData.filter(function(t) {
+          if (!kelasSiswa) return true;
+          var kls = t.kelas;
+          if (!kls || kls.length === 0) return true;
+          if (Array.isArray(kls)) return kls.indexOf(kelasSiswa) !== -1;
+          return typeof kls === 'string' && kls.indexOf(kelasSiswa) !== -1;
+        });
+        filteredT.forEach(function(t) {
+          var isNew = t.created_at && new Date(t.created_at) > batas72h;
+          var deadline = t.deadline ? new Date(t.deadline) : null;
+          var isDekat = deadline && (deadline - now) < 48 * 3600 * 1000 && deadline > now;
+          if (isNew || isDekat) {
+            allItems.push({
+              type: 'tugas', dot: 'nd-new',
+              icon: '✍️', ts: t.created_at || '',
+              judul: t.judul, mapel: t.mapel_nama || '',
+              deadline: t.deadline, isNew: true
+            });
+          }
+        });
+      }
+    } catch(e) { console.log('notif tugas error:', e); }
+
+    // 3. Materi baru (72 jam terakhir)
+    try {
+      var materiData = await sbFetch('/rest/v1/materi?select=id,judul,tipe,mapel,created_at&order=created_at.desc&aktif=eq.true&limit=10');
+      if (materiData) {
+        materiData.forEach(function(m) {
+          if (m.created_at && new Date(m.created_at) > batas72h) {
+            allItems.push({
+              type: 'materi', dot: 'nd-new',
+              icon: m.tipe === 'video' ? '🎬' : '📚',
+              ts: m.created_at || '',
+              judul: m.judul, mapel: m.mapel || '', isNew: true
+            });
+          }
+        });
+      }
+    } catch(e) { console.log('notif materi error:', e); }
+
+    // Hitung total notif baru
+    stuNotifUnread = allItems.filter(function(i){ return i.isNew; }).length;
+
+    // Update bell badge (lonceng atas)
     var bellBadge = document.getElementById('stu-bell-badge');
     if (bellBadge) {
       if (stuNotifUnread > 0) {
-        bellBadge.textContent = stuNotifUnread;
+        bellBadge.textContent = stuNotifUnread > 9 ? '9+' : stuNotifUnread;
         bellBadge.style.display = 'flex';
       } else {
         bellBadge.style.display = 'none';
       }
     }
+
+    // Update badge tab Tugas (hitung tugas baru / mendesak)
+    var tugasNewCount = allItems.filter(function(i) {
+      return i.type === 'tugas' && i.isNew;
+    }).length;
+    var stuTugasBadge = document.getElementById('stu-tugas-badge');
+    if (stuTugasBadge) {
+      if (tugasNewCount > 0) {
+        stuTugasBadge.textContent = tugasNewCount;
+        stuTugasBadge.style.display = 'flex';
+      } else {
+        stuTugasBadge.style.display = 'none';
+      }
+    }
+
+    // Simpan untuk renderStuNotif
+    window._stuAllNotifItems = allItems;
+
   } catch(e) { console.log('loadNotifSiswa error:', e); }
 }
 
@@ -6374,10 +6484,16 @@ function openStuNotif() {
   var overlay = document.getElementById('stu-notif-overlay');
   if (!overlay) return;
   overlay.classList.add('open');
-  // Reload notif saat dibuka
+
+  // Tampilkan loading dulu
+  var listEl = document.getElementById('stu-notif-content');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;">⏳ Memuat pemberitahuan...</div>';
+
+  // Reload dari Supabase lalu render
   var kelas = '';
   try { kelas = localStorage.getItem('stuKelas') || ''; } catch(e){}
-  loadNotifSiswa(kelas).then(function(){ renderStuNotif(); });
+  loadNotifSiswa(kelas).then(function() { renderStuNotif(); });
+
   // Clear badge
   stuNotifUnread = 0;
   var bellBadge = document.getElementById('stu-bell-badge');
@@ -6388,28 +6504,71 @@ function renderStuNotif() {
   var listEl = document.getElementById('stu-notif-content');
   if (!listEl) return;
 
-  if (stuNotifList.length === 0) {
-    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;">Belum ada pemberitahuan.</div>';
+  // Gunakan allNotifItems dari loadNotifSiswa baru
+  var items = window._stuAllNotifItems || [];
+
+  // Fallback: jika belum ada, render dari stuNotifList (ujian saja)
+  if (items.length === 0 && stuNotifList && stuNotifList.length > 0) {
+    items = stuNotifList.map(function(u) {
+      return {
+        type: 'ujian', dot: 'nd-new', icon: '📝',
+        judul: u.judul, mapel: u.mapel || '',
+        durasi: u.durasi_menit || 60,
+        mulai_at: u.mulai_at, ts: u.created_at || ''
+      };
+    });
+  }
+
+  if (items.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;padding:28px 16px;">'
+      + '<div style="font-size:36px;margin-bottom:10px;">🔔</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#1E293B;margin-bottom:6px;">Belum ada pemberitahuan</div>'
+      + '<div style="font-size:11px;color:#64748B;line-height:1.8;">Notif muncul otomatis saat:<br>'
+      + '📝 Ada ujian baru dari guru<br>'
+      + '✍️ Ada tugas baru dari guru<br>'
+      + '📚 Guru upload materi baru</div>'
+      + '</div>';
     return;
   }
 
-  listEl.innerHTML = stuNotifList.map(function(u) {
+  // Urutkan terbaru dulu
+  items.sort(function(a, b) { return (b.ts > a.ts) ? 1 : -1; });
+
+  listEl.innerHTML = items.map(function(item) {
     var now = new Date();
-    var mulai = u.mulai_at ? new Date(u.mulai_at) : now;
-    var isAktif = mulai <= now;
-    var mulaiStr = mulai.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    var icon = isAktif ? '🟢' : '🟣';
-    var status = isAktif ? 'Ujian Aktif' : 'Akan Datang';
+    var titleHtml = '';
+    var bodyHtml = '';
+
+    if (item.type === 'ujian') {
+      var mulai = item.mulai_at ? new Date(item.mulai_at) : now;
+      var isAktif = mulai <= now;
+      var mulaiStr = mulai.toLocaleString('id-ID', {
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+      titleHtml = (isAktif ? '🟢 Ujian Aktif' : '🟣 Ujian Akan Datang') + ' — ' + item.judul;
+      bodyHtml = '📚 ' + (item.mapel || '') + ' &nbsp;•&nbsp; ⏱ ' + (item.durasi || 60) + ' menit'
+               + '<br><span style="font-size:10px;color:#94A3B8;">📅 ' + mulaiStr + '</span>';
+    } else if (item.type === 'tugas') {
+      var ddl = item.deadline ? new Date(item.deadline) : null;
+      var ddlStr = ddl
+        ? ddl.toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'})
+        : '-';
+      var isDekat = ddl && (ddl - now) < 48 * 3600 * 1000 && ddl > now;
+      titleHtml = (isDekat ? '⚠️ Tugas Mendesak' : '✍️ Tugas Baru') + ' — ' + item.judul;
+      bodyHtml = '📚 ' + (item.mapel || '') + ' &nbsp;•&nbsp; ⏰ Deadline: ' + ddlStr;
+    } else if (item.type === 'materi') {
+      titleHtml = item.icon + ' Materi Baru — ' + item.judul;
+      bodyHtml = '📚 ' + (item.mapel || '') + ' &nbsp;•&nbsp; Baru ditambahkan guru';
+    }
 
     return '<div class="notif-item">'
-      + '<div class="notif-dot nd-new"></div>'
-      + '<div class="notif-ico">📝</div>'
+      + '<div class="notif-dot ' + item.dot + '"></div>'
+      + '<div class="notif-ico">' + item.icon + '</div>'
       + '<div class="notif-txt">'
-        + '<div class="nt">'+icon+' '+status+' — '+u.judul+'</div>'
-        + '<div class="nb">📚 '+(u.mapel||'')+' • ⏱ '+(u.durasi_menit||60)+' menit</div>'
-        + '<div class="ntm">📅 '+mulaiStr+'</div>'
-      + '</div>'
-    + '</div>';
+        + '<div class="nt">' + titleHtml + '</div>'
+        + (bodyHtml ? '<div class="nb">' + bodyHtml + '</div>' : '')
+      + '</div></div>';
   }).join('');
 }
 
@@ -6528,16 +6687,25 @@ async function loadAllDataOnLogin() {
 // ════════════════════════════════════════════════════════
 // POLLING SISWA — Cek ujian baru setiap 30 detik
 // ════════════════════════════════════════════════════════
+var _stuPollingInterval = null;
 function startStuPolling(kelasSiswa) {
+  if (_stuPollingInterval) clearInterval(_stuPollingInterval);
+  // Langsung cek badge saat login
   loadNotifSiswa(kelasSiswa);
-  setInterval(function() {
+  // Poll tiap 25 detik
+  _stuPollingInterval = setInterval(function() {
     loadNotifSiswa(kelasSiswa);
-    // Auto-refresh ujian list if tab is open
+    // Auto-refresh ujian list jika tab ujian sedang aktif
     var ujianPanel = document.getElementById('stu-ujian');
     if (ujianPanel && ujianPanel.classList.contains('active')) {
       loadUjianForSiswa(kelasSiswa);
     }
-  }, 30000);
+    // Auto-refresh tugas list jika tab tugas sedang aktif
+    var tugasPanel = document.getElementById('stu-tugas');
+    if (tugasPanel && tugasPanel.classList.contains('active')) {
+      loadTugasSiswa();
+    }
+  }, 25000);
 }
 
 // ════════════════════════════════════════════════════════
@@ -6674,6 +6842,8 @@ async function simpanSemuaNilai() {
   }
   document.getElementById('nilai-tugas-modal').classList.remove('open');
   showToast('✅ '+saved+' nilai berhasil disimpan!', '#D1FAE5', '#065F46');
+  // Refresh badge setelah menilai (tugas_submit sudah dinilai = kurangi badge)
+  setTimeout(function() { checkAndUpdateTeaNotifBadge(); }, 500);
 }
 
 // ════════════════════════════════════════════════════════
@@ -6764,6 +6934,10 @@ async function submitTugas() {
     window._currentTugasId = null;
     showToast('✅ Tugas berhasil dikumpulkan! Guru akan memberikan nilai.', '#D1FAE5', '#065F46');
     loadTugasSiswa();
+    // Update badge siswa agar ter-refresh
+    var kelas = '';
+    try { kelas = localStorage.getItem('stuKelas') || ''; } catch(e) {}
+    loadNotifSiswa(kelas);
   } catch(e) {
     document.getElementById('kumpul-tugas-modal').classList.remove('open');
     showToast('✅ Tugas dicatat (mode offline).', '#D1FAE5', '#065F46');
@@ -6922,6 +7096,8 @@ async function loadMateriSiswa() {
       return;
     }
 
+    // Normalize null tipe
+    data.forEach(function(m){ if(!m.tipe) m.tipe = 'dokumen'; });
     var videos   = data.filter(function(m){ return m.tipe === 'video'; });
     var nonVideo = data.filter(function(m){ return m.tipe !== 'video'; });
 
@@ -7556,36 +7732,69 @@ function renderIntegrasiGrid() {
   }).join('');
 }
 
-// ══════════════════════════════════════════
-// NOTIF GURU — polling data terbaru siswa
-// ══════════════════════════════════════════
-// Override startNotifPolling to also watch for student submissions
+// ══════════════════════════════════════════════════════════
+// NOTIF GURU — Polling komprehensif (pelanggaran + tugas + materi)
+// ══════════════════════════════════════════════════════════
 var _teaNotifInterval = null;
+var _lastNotifSnapshot = { logs: 0, submit: 0 };
+
 function startNotifPolling() {
   if (_teaNotifInterval) clearInterval(_teaNotifInterval);
-  loadTeacherNotif(); // load immediately
-  _teaNotifInterval = setInterval(function() {
-    checkNewTeacherNotifs();
-  }, 30000); // every 30s
+  checkAndUpdateTeaNotifBadge(); // langsung cek saat login
+  _teaNotifInterval = setInterval(checkAndUpdateTeaNotifBadge, 25000); // tiap 25 detik
 }
 
-var _lastNotifCount = 0;
-async function checkNewTeacherNotifs() {
+async function checkAndUpdateTeaNotifBadge() {
   try {
-    var data = await sbFetch('/rest/v1/exam_logs?select=id&order=created_at.desc&limit=20');
-    var count = data ? data.length : 0;
-    if (count > _lastNotifCount && _lastNotifCount > 0) {
-      var diff = count - _lastNotifCount;
-      // Update badge
-      var badge = document.getElementById('tea-notif-badge');
-      if (badge) {
-        badge.textContent = diff;
-        badge.style.display = 'flex';
+    var total = 0;
+    // Hitung exam_logs belum dibaca (pelanggaran + selesai ujian + kirim ulang)
+    try {
+      var logs = await sbFetch('/rest/v1/exam_logs?select=id,event_type&order=created_at.desc&limit=50');
+      if (logs) {
+        var newLogs = logs.filter(function(l){
+          return l.event_type === 'exam_cancelled' || l.event_type === 'violation'
+              || l.event_type === 'exam_finished' || l.event_type === 'retry_request';
+        });
+        total += newLogs.length;
+        // Toast jika ada log baru sejak terakhir cek
+        if (_lastNotifSnapshot.logs > 0 && newLogs.length > _lastNotifSnapshot.logs) {
+          showToast('🚨 Ada aktivitas ujian baru dari siswa!', '#FEE2E2', '#991B1B');
+        }
+        _lastNotifSnapshot.logs = newLogs.length;
       }
-      showToast('🔔 Ada ' + diff + ' notifikasi baru dari siswa!', '#DBEAFE', '#1E40AF');
+    } catch(e) {}
+    // Hitung tugas_submit belum dinilai
+    try {
+      var submits = await sbFetch('/rest/v1/tugas_submit?select=id,nilai&order=submitted_at.desc&limit=50');
+      if (submits) {
+        var belumDinilai = submits.filter(function(s){ return !s.nilai && s.nilai !== 0; });
+        total += belumDinilai.length;
+        if (_lastNotifSnapshot.submit > 0 && belumDinilai.length > _lastNotifSnapshot.submit) {
+          showToast('✍️ Ada tugas baru yang dikumpulkan siswa!', '#DBEAFE', '#1E40AF');
+        }
+        _lastNotifSnapshot.submit = belumDinilai.length;
+      }
+    } catch(e) {}
+
+    // Update badge guru
+    var badge = document.getElementById('tea-notif-badge');
+    if (badge) {
+      if (total > 0) {
+        badge.textContent = total > 99 ? '99+' : total;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
     }
-    _lastNotifCount = count;
-  } catch(e) {}
+    // Update badge tab tugas (tugas belum dinilai)
+    var tugasBadge = document.getElementById('tea-tugas-badge');
+    if (tugasBadge && _lastNotifSnapshot.submit > 0) {
+      tugasBadge.textContent = _lastNotifSnapshot.submit;
+      tugasBadge.style.display = 'flex';
+    } else if (tugasBadge) {
+      tugasBadge.style.display = 'none';
+    }
+  } catch(e) { console.log('checkAndUpdateTeaNotifBadge error:', e); }
 }
 
 // Load integrasi on teacher login — safe override
@@ -7601,12 +7810,20 @@ async function checkNewTeacherNotifs() {
 // MISC BUG FIXES
 // ══════════════════════════════════════════
 
-// Fix: teacher notif badge clear when opened
-var _origOpenNotif = openNotif;
+// Fix: teacher notif — clear badge saat dibuka, tampilkan loading
 function openNotif() {
+  var overlay = document.getElementById('notif-overlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  // Clear badge
   var badge = document.getElementById('tea-notif-badge');
-  if (badge) badge.style.display = 'none';
-  _origOpenNotif();
+  if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
+  _lastNotifCount = 0;
+  // Tampilkan loading
+  var el = document.getElementById('notif-list-content');
+  if (el) el.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;">⏳ Memuat notifikasi...</div>';
+  // Load dari Supabase
+  loadTeacherNotif();
 }
 
 // Fix: login error display helper (ensure it exists)
