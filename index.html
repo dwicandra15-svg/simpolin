@@ -2354,7 +2354,11 @@ function loginGuruSuccess(nama, nip, pass, guruObj) {
     })
   }).catch(function(){});
   showScreen('pg-teacher');
-  setTimeout(function(){ loadViolations(); }, 1000);
+  // Load foto profil dari Supabase (sinkron antar device)
+  setTimeout(function(){
+    restoreGuruPhoto();
+    loadViolations();
+  }, 500);
 }
 
 // Fallback login lokal (offline mode)
@@ -2564,9 +2568,10 @@ function restoreSession() {
         var el2 = document.getElementById('tea-header-name');
         if (el2) el2.innerHTML = teaH;
       }
+      currentGuruNIP = localStorage.getItem('guruNip') || currentGuruNIP || '';
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById('pg-teacher').classList.add('active');
-      setTimeout(function(){ loadViolations(); }, 500);
+      setTimeout(function(){ restoreGuruPhoto(); loadViolations(); }, 500);
     } else if (savedScreen === 'pg-admin') {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById('pg-admin').classList.add('active');
@@ -2600,7 +2605,7 @@ function switchTeaTab(name, el) {
 }
 
 // Settings
-function openSettings() {
+async function openSettings() {
   // Restore dari session jika ada
   var nama  = '';
   var nip   = '';
@@ -2614,6 +2619,24 @@ function openSettings() {
     hp    = localStorage.getItem('guruHp')    || (currentGuru ? currentGuru.hp    : '') || '';
     nip   = localStorage.getItem('guruNip')   || currentGuruNIP || '';
   } catch(e){}
+
+  // Jika NIP ada, ambil data terbaru dari Supabase (termasuk foto)
+  if (nip) {
+    try {
+      var guruData = await sbFetch('/rest/v1/guru?nip=eq.' + encodeURIComponent(nip) + '&select=*');
+      if (guruData && guruData.length > 0) {
+        var g = guruData[0];
+        nama  = g.nama  || nama;
+        email = g.email || email;
+        hp    = g.hp    || hp;
+        // Sinkron foto dari Supabase ke localStorage & UI
+        if (g.foto_url) {
+          try { localStorage.setItem('guruPhoto', g.foto_url); } catch(e2){}
+          applyGuruPhotoToUI(g.foto_url);
+        }
+      }
+    } catch(e) { console.warn('Gagal load profil dari Supabase:', e); }
+  }
 
   var allInputs = document.querySelectorAll('#settings-overlay input[type="text"]');
   if (allInputs[0]) allInputs[0].value = nama;
@@ -3067,8 +3090,11 @@ async function populateAdminPanel() {
         card.style.cssText = 'background:#fff;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1.5px solid #E2E8F0;margin-bottom:8px;';
         var kelasList = [];
         try { kelasList = g.kelas ? (Array.isArray(g.kelas) ? g.kelas : JSON.parse(g.kelas)) : []; } catch(e2) {}
+        var avatarHtml = g.foto_url
+          ? '<div style="width:44px;height:44px;border-radius:12px;background:url('+g.foto_url+') center/cover no-repeat;flex-shrink:0;"></div>'
+          : '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1E293B,#334155);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👨‍🏫</div>';
         card.innerHTML =
-          '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1E293B,#334155);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👨‍🏫</div>' +
+          avatarHtml +
           '<div style="flex:1;">' +
             '<div style="font-size:13px;font-weight:800;color:#1E293B;">' + (g.nama||'-') + '</div>' +
             '<div style="font-size:11px;color:#64748B;font-weight:600;margin-top:2px;">NIP: ' + (g.nip||'-') + '</div>' +
@@ -3076,7 +3102,7 @@ async function populateAdminPanel() {
               '<span style="background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">' + (g.mapel||'-') + '</span>' +
               '<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">' + kelasList.join(', ') + '</span>' +
             '</div>' +
-            '<div style="font-size:11px;color:#64748B;margin-top:3px;">📧 ' + (g.email||'-') + '</div>' +
+            '<div style="font-size:11px;color:#64748B;margin-top:3px;">📧 ' + (g.email||'-') + ' | 📱 ' + (g.hp||'-') + '</div>' +
           '</div>';
         guruContainer.appendChild(card);
       });
@@ -3965,61 +3991,153 @@ function triggerPhotoUpload() {
   input.onchange = function(e) {
     var file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      showToast('⚠️ Ukuran foto max 2MB!', '#FEE2E2', '#991B1B');
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('⚠️ Ukuran foto max 5MB!', '#FEE2E2', '#991B1B');
       return;
     }
+    showToast('⏳ Memproses foto...', '#DBEAFE', '#1E40AF');
     var reader = new FileReader();
     reader.onload = function(ev) {
-      var base64 = ev.target.result;
-      // Update avatar display
-      var avatarEl = document.querySelector('.settings-avatar');
-      if (avatarEl) {
-        avatarEl.style.backgroundImage = 'url(' + base64 + ')';
-        avatarEl.style.backgroundSize = 'cover';
-        avatarEl.style.backgroundPosition = 'center';
-        avatarEl.textContent = '';
-        // Re-add edit button
-        var editBtn = document.createElement('div');
-        editBtn.className = 'av-edit';
-        editBtn.textContent = '📷';
-        avatarEl.appendChild(editBtn);
-      }
-      // Save to localStorage
-      try { localStorage.setItem('guruPhoto', base64); } catch(e){}
-      // Save to Supabase
-      savePhotoToSupabase(base64);
-      showToast('✅ Foto profil berhasil diperbarui!', '#D1FAE5', '#065F46');
+      // Kompres gambar sebelum simpan agar tidak terlalu besar
+      kompresGambar(ev.target.result, 400, 0.75, function(compressed) {
+        // Apply ke UI langsung
+        applyGuruPhotoToUI(compressed);
+        // Simpan ke localStorage
+        try { localStorage.setItem('guruPhoto', compressed); } catch(e2){}
+        // Simpan ke Supabase dengan error feedback
+        savePhotoToSupabase(compressed);
+      });
     };
     reader.readAsDataURL(file);
   };
   input.click();
 }
 
-async function savePhotoToSupabase(base64) {
-  if (!currentGuruNIP) return;
-  try {
-    await sbFetch('/rest/v1/guru?nip=eq.' + currentGuruNIP, {
-      method: 'PATCH',
-      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON,
-        'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({ foto_url: base64 })
-    });
-  } catch(e) { console.log('Photo save error:', e); }
+// Kompres gambar ke ukuran & kualitas tertentu menggunakan canvas
+function kompresGambar(dataUrl, maxSize, quality, callback) {
+  var img = new Image();
+  img.onload = function() {
+    var canvas = document.createElement('canvas');
+    var w = img.width, h = img.height;
+    // Scale down jika lebih besar dari maxSize
+    if (w > maxSize || h > maxSize) {
+      if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+      else       { w = Math.round(w * maxSize / h); h = maxSize; }
+    }
+    canvas.width = w; canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    callback(canvas.toDataURL('image/jpeg', quality));
+  };
+  img.onerror = function() { callback(dataUrl); }; // fallback
+  img.src = dataUrl;
 }
 
-function restoreGuruPhoto() {
+async function savePhotoToSupabase(base64) {
+  var nip = currentGuruNIP || localStorage.getItem('guruNip') || '';
+  if (!nip) {
+    showToast('⚠️ NIP tidak ditemukan. Login ulang lalu coba lagi.', '#FEE2E2', '#991B1B');
+    return;
+  }
   try {
-    var photo = localStorage.getItem('guruPhoto');
-    if (photo) {
-      var avatarEl = document.querySelector('.settings-avatar');
-      if (avatarEl) {
-        avatarEl.style.backgroundImage = 'url(' + photo + ')';
-        avatarEl.style.backgroundSize = 'cover';
-        avatarEl.style.backgroundPosition = 'center';
+    showToast('⏳ Menyimpan foto ke server...', '#DBEAFE', '#1E40AF');
+    var res = await fetch(SUPABASE_URL + '/rest/v1/guru?nip=eq.' + encodeURIComponent(nip), {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ foto_url: base64 })
+    });
+    if (res.ok) {
+      showToast('✅ Foto tersimpan & tersinkron ke semua perangkat!', '#D1FAE5', '#065F46');
+    } else {
+      var errText = await res.text();
+      console.error('Gagal simpan foto:', res.status, errText);
+      showToast('⚠️ Foto disimpan lokal tapi gagal sinkron ('+res.status+'). Cek RLS tabel guru.', '#FEF3C7', '#92400E');
+    }
+  } catch(e) {
+    console.error('savePhotoToSupabase error:', e);
+    showToast('⚠️ Foto disimpan lokal, koneksi bermasalah.', '#FEF3C7', '#92400E');
+  }
+}
+
+async function restoreGuruPhoto() {
+  var nip = localStorage.getItem('guruNip') || currentGuruNIP || '';
+  console.log('[FotoGuru] restoreGuruPhoto dipanggil, NIP:', nip || '(kosong)');
+
+  // Coba ambil foto dari Supabase dulu (sinkron antar device)
+  if (nip) {
+    try {
+      var res = await fetch(SUPABASE_URL + '/rest/v1/guru?nip=eq.' + encodeURIComponent(nip) + '&select=foto_url', {
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + SUPABASE_ANON
+        }
+      });
+      console.log('[FotoGuru] Supabase response status:', res.status);
+      if (res.ok) {
+        var data = await res.json();
+        console.log('[FotoGuru] Data dari Supabase:', data ? data.length + ' baris' : 'null', 'ada foto:', !!(data && data[0] && data[0].foto_url));
+        if (data && data.length > 0 && data[0].foto_url) {
+          var photo = data[0].foto_url;
+          try { localStorage.setItem('guruPhoto', photo); } catch(e2){}
+          applyGuruPhotoToUI(photo);
+          console.log('[FotoGuru] Foto berhasil diload dari Supabase ✅');
+          return;
+        } else {
+          console.log('[FotoGuru] Kolom foto_url kosong di Supabase untuk NIP:', nip);
+        }
+      } else {
+        var errBody = await res.text();
+        console.warn('[FotoGuru] Supabase error', res.status, errBody);
       }
+    } catch(e) {
+      console.warn('[FotoGuru] Gagal fetch Supabase:', e.message);
+    }
+  } else {
+    console.warn('[FotoGuru] NIP kosong — tidak bisa query Supabase');
+  }
+
+  // Fallback: pakai localStorage
+  try {
+    var localPhoto = localStorage.getItem('guruPhoto');
+    if (localPhoto) {
+      applyGuruPhotoToUI(localPhoto);
+      console.log('[FotoGuru] Foto diload dari localStorage (fallback)');
+    } else {
+      console.log('[FotoGuru] Tidak ada foto di localStorage maupun Supabase');
     }
   } catch(e) {}
+}
+
+function applyGuruPhotoToUI(photoDataUrl) {
+  if (!photoDataUrl) return;
+  // Avatar di halaman settings
+  var avatarEl = document.querySelector('.settings-avatar');
+  if (avatarEl) {
+    avatarEl.style.backgroundImage    = 'url(' + photoDataUrl + ')';
+    avatarEl.style.backgroundSize     = 'cover';
+    avatarEl.style.backgroundPosition = 'center';
+    avatarEl.textContent = '';
+    // Pastikan tombol edit tetap ada
+    if (!avatarEl.querySelector('.av-edit')) {
+      var editBtn = document.createElement('div');
+      editBtn.className   = 'av-edit';
+      editBtn.textContent = '📷';
+      avatarEl.appendChild(editBtn);
+    }
+  }
+  // Topbar icon guru (tb-logo-icon di pg-teacher)
+  var tbIcons = document.querySelectorAll('#pg-teacher .tb-logo-icon');
+  tbIcons.forEach(function(ic) {
+    ic.style.backgroundImage    = 'url(' + photoDataUrl + ')';
+    ic.style.backgroundSize     = 'cover';
+    ic.style.backgroundPosition = 'center';
+    ic.textContent = '';
+  });
 }
 
 // ════════════════════════════════════════════════
