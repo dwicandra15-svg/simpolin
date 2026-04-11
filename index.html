@@ -887,6 +887,48 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
       </div>
     </div>
 
+    <div class="tab-panel" id="stu-pengaturan">
+      <div style="padding:0 0 80px;">
+        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:16px;">⚙️ Pengaturan Akun</div>
+
+        <!-- Info akun -->
+        <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:14px;padding:14px;margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:800;color:#1D4ED8;margin-bottom:6px;">👤 Informasi Akun</div>
+          <div style="font-size:12px;font-weight:600;color:#1E293B;">Nama: <strong id="stu-setting-nama">-</strong></div>
+          <div style="font-size:12px;font-weight:600;color:#1E293B;margin-top:4px;">NISN: <strong id="stu-setting-nisn">-</strong></div>
+          <div style="font-size:12px;font-weight:600;color:#1E293B;margin-top:4px;">Kelas: <strong id="stu-setting-kelas">-</strong></div>
+        </div>
+
+        <!-- Ganti Password -->
+        <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:14px;margin-bottom:14px;">
+          <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px;">🔑 Ganti Password</div>
+          <div class="s-field">
+            <label>PASSWORD LAMA</label>
+            <input type="password" id="stu-old-pass" placeholder="Masukkan password saat ini">
+          </div>
+          <div class="s-field">
+            <label>PASSWORD BARU</label>
+            <input type="password" id="stu-new-pass" placeholder="Min. 6 karakter">
+          </div>
+          <div class="s-field" style="margin-bottom:0;">
+            <label>KONFIRMASI PASSWORD BARU</label>
+            <input type="password" id="stu-confirm-pass" placeholder="Ulangi password baru">
+          </div>
+          <div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:6px;">Password default = NISN Anda</div>
+        </div>
+
+        <button onclick="saveSiswaPassword()" style="width:100%;padding:13px;border-radius:14px;border:none;background:linear-gradient(90deg,#059669,#065F46);color:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(5,150,105,.3);">
+          💾 Simpan Password Baru
+        </button>
+
+        <div style="margin-top:14px;">
+          <button onclick="doLogout()" style="width:100%;padding:11px;border-radius:12px;border:none;background:#FEE2E2;color:#991B1B;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;">
+            🚪 Keluar / Logout
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div><!-- end tab-content-area -->
 
   <div class="wm wm-stu">Developed & Supported by <span>D.D Candra</span> © 2026</div>
@@ -898,6 +940,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
     <div class="bn-item" onclick="switchStuTab('tugas',this)"><div class="bn-icon">✍️</div><div class="bn-label">Tugas</div></div>
     <div class="bn-item" onclick="switchStuTab('ujian',this)"><div class="bn-icon">📝</div><div class="bn-label">Ujian</div></div>
     <div class="bn-item" onclick="switchStuTab('nilai',this)"><div class="bn-icon">📊</div><div class="bn-label">Nilai</div></div>
+    <div class="bn-item" onclick="switchStuTab('pengaturan',this);loadSiswaSetting()"><div class="bn-icon">⚙️</div><div class="bn-label">Setelan</div></div>
   </div>
 </div>
 
@@ -1203,7 +1246,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
     <div class="s-field"><label>NO. HP / WA</label><input type="text" value="" placeholder="Nomor HP/WA"></div>
 
     <div class="s-divider"></div>
-    <div class="s-field"><label>GANTI PASSWORD</label><input type="password" placeholder="Password baru (kosongkan jika tidak diubah)"></div>
+    <div class="s-field"><label>GANTI PASSWORD</label><input type="password" id="s-guru-new-pass" placeholder="Password baru (kosongkan jika tidak diubah)"><div style="font-size:10px;color:var(--muted);margin-top:4px;font-weight:600;">Kosongkan jika tidak ingin mengubah password</div></div>
 
     <button class="s-save-btn" onclick="saveSettings()">💾 Simpan Perubahan</button>
     <button class="s-logout-btn" onclick="doLogout()">🚪 Keluar / Logout</button>
@@ -1387,8 +1430,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 
     <div class="forgot-contact-box">
       <div class="fc-title">📞 Hubungi Admin Sistem</div>
-      <div class="fc-info">📧 admin [at] simpolin.sch.id</div>
-      <div class="fc-info" style="margin-top:4px;">📱 WhatsApp: 0812-3456-7890</div>
+      <div class="fc-info">📱 WhatsApp: 085232006800</div>
       <div class="fc-info" style="margin-top:4px;">🕐 Senin–Jumat, 07.00–15.00 WIB</div>
     </div>
 
@@ -1520,14 +1562,23 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 
     <!-- TAB: RESET PASSWORD -->
     <div class="tab-panel" id="adm-reset">
-      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:12px;margin-top:6px;">🔑 Reset Password Guru</div>
-      <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px;">
-        <div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:12px;padding:12px;">
-          <div style="font-size:12px;font-weight:800;color:#991B1B;">⚠️ Perhatian Admin</div>
-          <div style="font-size:11px;color:#B91C1C;font-weight:600;margin-top:4px;line-height:1.5;">Fitur ini hanya untuk Admin. Password yang direset akan langsung aktif. Informasikan kepada guru yang bersangkutan.</div>
+      <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:12px;margin-top:6px;">🔑 Manajemen Password</div>
+
+      <!-- Reset Password Guru / Siswa -->
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:800;color:var(--text);">Reset Password Guru / Siswa</div>
+        <div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:12px;padding:10px;">
+          <div style="font-size:11px;color:#B91C1C;font-weight:600;line-height:1.5;">⚠️ Password yang direset langsung aktif. Informasikan ke yang bersangkutan.</div>
         </div>
         <div class="s-field" style="margin:0;">
-          <label>PILIH GURU</label>
+          <label>RESET UNTUK</label>
+          <select id="adm-reset-type" onchange="adminPopulateResetSelect()" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;color:var(--text);outline:none;">
+            <option value="guru">👨‍🏫 Guru</option>
+            <option value="siswa">👨‍🎓 Siswa</option>
+          </select>
+        </div>
+        <div class="s-field" style="margin:0;">
+          <label>PILIH NAMA</label>
           <select id="adm-reset-select" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;color:var(--text);outline:none;"></select>
         </div>
         <div class="s-field" style="margin:0;">
@@ -1535,6 +1586,23 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
           <input type="text" id="adm-new-pass" placeholder="Min. 6 karakter" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
         </div>
         <button onclick="adminResetPassword()" style="padding:11px;border-radius:12px;border:none;background:linear-gradient(90deg,#B91C1C,#DC2626);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(185,28,28,.3);">🔑 Reset Password Sekarang</button>
+      </div>
+
+      <!-- Ganti Password Admin sendiri -->
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="font-size:13px;font-weight:800;color:var(--text);">🛡️ Ganti Password Admin</div>
+        <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:10px;">
+          <div style="font-size:11px;color:#1D4ED8;font-weight:600;line-height:1.5;">Password default admin: <strong>admin1234</strong>. Segera ganti untuk keamanan!</div>
+        </div>
+        <div class="s-field" style="margin:0;">
+          <label>PASSWORD ADMIN BARU</label>
+          <input type="password" id="adm-self-pass" placeholder="Min. 6 karakter" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+        </div>
+        <div class="s-field" style="margin:0;">
+          <label>KONFIRMASI PASSWORD</label>
+          <input type="password" id="adm-self-pass-confirm" placeholder="Ulangi password baru" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+        </div>
+        <button onclick="changeAdminSelfPassword()" style="padding:11px;border-radius:12px;border:none;background:linear-gradient(90deg,#1D4ED8,#2563EB);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.3);">🛡️ Simpan Password Admin</button>
       </div>
     </div>
 
@@ -2183,6 +2251,9 @@ async function doLogin() {
 
       // Admin bypass
       if (user === 'admin') {
+        // Cek password admin dari Supabase, fallback ke default
+        var adminOk = await checkAdminPassword(pass);
+        if (!adminOk) { showLoginError('Password admin salah!'); return; }
         document.querySelector('#pg-teacher .tb-greeting p').textContent = getGreeting() + ' 👋';
         showAdminBadge();
         return;
@@ -2220,7 +2291,7 @@ function loginSiswaSuccess(nama, kelas, nisn) {
     dep + ' <span>' + bel + '</span> &mdash; Kelas ' + kelas;
   document.querySelector('#pg-student .tb-greeting p').textContent = getGreeting() + ' 👋';
   // Simpan kelas siswa ke session
-  try { localStorage.setItem('stuKelas', kelas); } catch(e){}
+  try { localStorage.setItem('stuKelas', kelas); localStorage.setItem('stuNisn', nisn); localStorage.setItem('stuNama', nama); } catch(e){}
   // Langsung load ujian + start polling
   setTimeout(function(){
     loadUjianForSiswa(kelas);
@@ -2299,7 +2370,7 @@ async function doLoginLocal() {
       var data = await sbFetch('/rest/v1/siswa?nisn=eq.'+encodeURIComponent(nisn)+'&select=*');
       if (!data || data.length === 0) { showLoginError('NISN tidak ditemukan. Hubungi guru/admin.'); return; }
       var siswa = data[0];
-      var ok = (pass === nisn) || (siswa.tanggal_lahir && pass === siswa.tanggal_lahir) || (pass === nisn.slice(-6));
+      var ok = (siswa.password && pass === siswa.password) || (pass === nisn) || (siswa.tanggal_lahir && pass === siswa.tanggal_lahir) || (pass === nisn.slice(-6));
       if (!ok) { showLoginError('Password salah. Password default = NISN Anda.'); return; }
       loginSiswaSuccess(siswa.nama, siswa.kelas, nisn);
     } catch(e) { showLoginError('Gagal terhubung. Cek koneksi internet.');
@@ -2308,7 +2379,7 @@ async function doLoginLocal() {
     var user = document.getElementById('inp-guru-user').value.trim();
     var pass2 = document.getElementById('inp-guru-pass').value.trim();
     var mapel = document.getElementById('inp-guru-mapel') ? document.getElementById('inp-guru-mapel').value : '';
-    if (user === 'admin') { if (pass2.length >= 4) { showAdminBadge(); return; } showLoginError('Password admin min 4 karakter.'); return; }
+    if (user === 'admin') { var adminOk2 = await checkAdminPassword(pass2); if (!adminOk2) { showLoginError('Password admin salah!'); return; } showAdminBadge(); return; }
     if (!user || !pass2) { showLoginError('NIP dan password wajib diisi.'); return; }
     if (!mapel) { showLoginError('Pilih mata pelajaran terlebih dahulu.'); return; }
     var btn3 = document.getElementById('login-btn');
@@ -2385,10 +2456,22 @@ async function saveSettings() {
     if (headerEl) localStorage.setItem('teaHeader', headerEl.outerHTML);
   } catch(e){}
 
-  // 5. Simpan ke Supabase (permanen)
+  // 5. Ambil password baru jika diisi
+  var newPass = '';
+  var passEl = document.getElementById('s-guru-new-pass');
+  if (passEl) newPass = passEl.value.trim();
+  if (newPass && newPass.length < 6) {
+    showToast('⚠️ Password baru minimal 6 karakter!', '#FEE2E2', '#991B1B');
+    if (btn) { btn.textContent = '💾 Simpan Perubahan'; btn.disabled = false; }
+    return;
+  }
+
+  // 6. Simpan ke Supabase (permanen)
   try {
     var nipToSave = nip || currentGuruNIP;
     if (nipToSave) {
+      var patchBody = { nama: nama, email: email, hp: hp };
+      if (newPass) patchBody.password = newPass;
       await sbFetch('/rest/v1/guru?nip=eq.' + nipToSave, {
         method: 'PATCH',
         headers: {
@@ -2397,18 +2480,25 @@ async function saveSettings() {
           'Content-Type': 'application/json',
           'Prefer': 'return=minimal'
         },
-        body: JSON.stringify({
-          nama: nama,
-          email: email,
-          hp: hp
-        })
+        body: JSON.stringify(patchBody)
       });
+      if (newPass) {
+        // Update password di session
+        if (!currentGuru) currentGuru = {};
+        currentGuru.password = newPass;
+        if (passEl) passEl.value = '';
+        showToast('✅ Profil & password tersimpan permanen!', '#D1FAE5', '#065F46');
+      } else {
+        showToast('✅ Profil tersimpan permanen!', '#D1FAE5', '#065F46');
+      }
     }
-  } catch(e) { console.log('Supabase save error:', e); }
+  } catch(e) {
+    console.log('Supabase save error:', e);
+    showToast('✅ Profil tersimpan (lokal)!', '#D1FAE5', '#065F46');
+  }
 
   if (btn) { btn.textContent = '💾 Simpan Perubahan'; btn.disabled = false; }
   closeSettings();
-  showToast('✅ Profil tersimpan permanen!', '#D1FAE5', '#065F46');
 }
 
 function showToast(msg, bg, color) {
@@ -2911,81 +3001,274 @@ function updateKelasPreview() {
 
 
 // ── ADMIN FUNCTIONS ──
+// ════════════════════════════════════════════════
+// ADMIN PASSWORD — disimpan di Supabase app_settings
+// Default: admin1234 (ganti via panel Admin)
+// ════════════════════════════════════════════════
+var ADMIN_DEFAULT_PASS = 'admin1234';
+
+async function checkAdminPassword(inputPass) {
+  if (!inputPass || inputPass.length < 4) return false;
+  try {
+    var data = await sbFetch('/rest/v1/app_settings?key=eq.admin_password&select=value');
+    if (data && data.length > 0) {
+      return inputPass === data[0].value;
+    }
+  } catch(e) { console.warn('Gagal cek admin pass dari Supabase:', e); }
+  // Fallback ke default
+  return inputPass === ADMIN_DEFAULT_PASS;
+}
+
+async function saveAdminPassword(newPass) {
+  if (!newPass || newPass.length < 6) return false;
+  try {
+    var existing = await sbFetch('/rest/v1/app_settings?key=eq.admin_password&select=key');
+    if (existing && existing.length > 0) {
+      await sbFetch('/rest/v1/app_settings?key=eq.admin_password', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ value: newPass, updated_at: new Date().toISOString() })
+      });
+    } else {
+      await sbFetch('/rest/v1/app_settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ key: 'admin_password', value: newPass })
+      });
+    }
+    return true;
+  } catch(e) { console.warn('Gagal simpan admin pass:', e); return false; }
+}
+
 function showAdminBadge() {
   // Switch to admin screen
   showScreen('pg-admin');
   populateAdminPanel();
 }
 
-function populateAdminPanel() {
-  // Count active teachers (exclude admin)
-  var guruList = Object.entries(dbGuru).filter(function(e){ return e[0] !== 'admin'; });
-  document.getElementById('adm-guru-count').textContent = guruList.length;
-  document.getElementById('adm-siswa-count').textContent = Object.keys(dbSiswa).length;
-
-  // Populate guru cards
-  var guruContainer = document.getElementById('adm-guru-list');
-  if (guruContainer) {
-    guruContainer.innerHTML = '';
-    guruList.forEach(function(entry) {
-      var nip = entry[0]; var g = entry[1];
-      var card = document.createElement('div');
-      card.style.cssText = 'background:#fff;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1.5px solid #E2E8F0;';
-      card.innerHTML =
-        '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1E293B,#334155);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👨‍🏫</div>' +
-        '<div style="flex:1;">' +
-          '<div style="font-size:13px;font-weight:800;color:#1E293B;">' + g.nama + '</div>' +
-          '<div style="font-size:11px;color:#64748B;font-weight:600;margin-top:2px;">NIP: ' + nip + '</div>' +
-          '<div style="display:flex;gap:6px;margin-top:4px;">' +
-            '<span style="background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">' + g.mapel + '</span>' +
-            '<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">' + (g.kelas||[]).join(', ') + '</span>' +
-          '</div>' +
-          '<div style="font-size:11px;color:#64748B;margin-top:3px;">📧 ' + g.email + '</div>' +
-        '</div>';
-      guruContainer.appendChild(card);
-    });
+async function populateAdminPanel() {
+  // ── Tampilkan loading sementara ──
+  var siswaTbody = document.querySelector('#adm-siswa-table table');
+  if (siswaTbody) {
+    while (siswaTbody.rows.length > 1) siswaTbody.deleteRow(1);
+    var loadRow = siswaTbody.insertRow();
+    loadRow.innerHTML = '<td colspan="4" style="text-align:center;padding:16px;color:#64748B;font-size:12px;">⏳ Memuat data dari Supabase...</td>';
   }
 
-  // Populate siswa table
-  var tbody = document.querySelector('#adm-siswa-table table');
-  if (tbody) {
-    // Remove old rows except header
-    while (tbody.rows.length > 1) tbody.deleteRow(1);
-    Object.entries(dbSiswa).forEach(function(entry) {
-      var nisn = entry[0]; var s = entry[1];
-      var row = tbody.insertRow();
-      row.innerHTML =
-        '<td style="font-size:11px;font-weight:700;padding:8px 10px;">' + s.nama + '</td>' +
-        '<td style="font-size:10px;color:#64748B;padding:8px 10px;">' + nisn + '</td>' +
-        '<td style="padding:8px 10px;"><span style="background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">' + s.kelas + '</span></td>' +
-        '<td style="padding:8px 10px;"><span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">Aktif</span></td>';
-    });
-  }
+  try {
+    // ── 1. Load GURU dari Supabase ──
+    var guruData = await sbFetch('/rest/v1/guru?select=*&order=nama.asc');
+    var guruContainer = document.getElementById('adm-guru-list');
+    if (guruContainer && guruData && guruData.length > 0) {
+      document.getElementById('adm-guru-count').textContent = guruData.length;
+      guruContainer.innerHTML = '';
+      guruData.forEach(function(g) {
+        var card = document.createElement('div');
+        card.style.cssText = 'background:#fff;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1.5px solid #E2E8F0;margin-bottom:8px;';
+        var kelasList = [];
+        try { kelasList = g.kelas ? (Array.isArray(g.kelas) ? g.kelas : JSON.parse(g.kelas)) : []; } catch(e2) {}
+        card.innerHTML =
+          '<div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1E293B,#334155);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">👨‍🏫</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:13px;font-weight:800;color:#1E293B;">' + (g.nama||'-') + '</div>' +
+            '<div style="font-size:11px;color:#64748B;font-weight:600;margin-top:2px;">NIP: ' + (g.nip||'-') + '</div>' +
+            '<div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">' +
+              '<span style="background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">' + (g.mapel||'-') + '</span>' +
+              '<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">' + kelasList.join(', ') + '</span>' +
+            '</div>' +
+            '<div style="font-size:11px;color:#64748B;margin-top:3px;">📧 ' + (g.email||'-') + '</div>' +
+          '</div>';
+        guruContainer.appendChild(card);
+      });
+    } else {
+      document.getElementById('adm-guru-count').textContent = '0';
+      if (guruContainer) guruContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#64748B;font-size:12px;">Belum ada data guru.</div>';
+    }
+  } catch(e) { console.warn('Load guru admin error:', e); }
 
-  // Populate reset select
-  var sel = document.getElementById('adm-reset-select');
-  if (sel) {
-    sel.innerHTML = '';
-    guruList.forEach(function(entry) {
-      var opt = document.createElement('option');
-      opt.value = entry[0];
-      opt.textContent = entry[1].nama + ' (' + entry[0] + ')';
-      sel.appendChild(opt);
-    });
+  try {
+    // ── 2. Load SISWA dari Supabase ──
+    var siswaData = await sbFetch('/rest/v1/siswa?select=*&order=kelas.asc,nama.asc');
+    var tbody = document.querySelector('#adm-siswa-table table');
+    if (tbody) {
+      while (tbody.rows.length > 1) tbody.deleteRow(1);
+      if (siswaData && siswaData.length > 0) {
+        document.getElementById('adm-siswa-count').textContent = siswaData.length;
+        siswaData.forEach(function(s) {
+          var row = tbody.insertRow();
+          var statusBg  = s.aktif ? '#D1FAE5' : '#FEE2E2';
+          var statusClr = s.aktif ? '#065F46'  : '#991B1B';
+          var statusTxt = s.aktif ? 'Aktif'    : 'Nonaktif';
+          row.innerHTML =
+            '<td style="font-size:12px;font-weight:700;padding:9px 10px;">' + (s.nama||'-') + '</td>' +
+            '<td style="font-size:11px;color:#64748B;padding:9px 10px;">' + (s.nisn||'-') + '</td>' +
+            '<td style="padding:9px 10px;"><span style="background:#DBEAFE;color:#1E40AF;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">' + (s.kelas||'-') + '</span></td>' +
+            '<td style="padding:9px 10px;"><span style="background:'+statusBg+';color:'+statusClr+';padding:2px 8px;border-radius:99px;font-size:10px;font-weight:800;">'+statusTxt+'</span></td>';
+        });
+      } else {
+        document.getElementById('adm-siswa-count').textContent = '0';
+        var er = tbody.insertRow();
+        er.innerHTML = '<td colspan="4" style="text-align:center;padding:16px;color:#64748B;font-size:12px;">Belum ada data siswa. Upload via Excel di mode Guru.</td>';
+      }
+    }
+  } catch(e) {
+    console.warn('Load siswa admin error:', e);
+    var tbody2 = document.querySelector('#adm-siswa-table table');
+    if (tbody2) {
+      while (tbody2.rows.length > 1) tbody2.deleteRow(1);
+      var er2 = tbody2.insertRow();
+      er2.innerHTML = '<td colspan="4" style="text-align:center;padding:16px;color:#991B1B;font-size:12px;">⚠️ Gagal memuat data. Cek koneksi.</td>';
+    }
   }
 }
 
-function adminResetPassword() {
-  var nip = document.getElementById('adm-reset-select').value;
-  var newPass = document.getElementById('adm-new-pass').value.trim();
-  if (!newPass || newPass.length < 6) {
-    showToast('⚠️ Password minimal 6 karakter!', '#FEE2E2', '#991B1B');
-    return;
+
+// ════════════════════════════════════════════════
+// SISWA — GANTI PASSWORD
+// ════════════════════════════════════════════════
+function loadSiswaSetting() {
+  try {
+    var nisn = localStorage.getItem('stuNisn') || '';
+    var nama = localStorage.getItem('stuNama') || '-';
+    var kelas = localStorage.getItem('stuKelas') || '-';
+    var n = document.getElementById('stu-setting-nama');
+    var ni = document.getElementById('stu-setting-nisn');
+    var k = document.getElementById('stu-setting-kelas');
+    if (n) n.textContent = nama;
+    if (ni) ni.textContent = nisn;
+    if (k) k.textContent = kelas;
+  } catch(e) {}
+}
+
+async function saveSiswaPassword() {
+  var nisn      = localStorage.getItem('stuNisn') || '';
+  var oldPass   = (document.getElementById('stu-old-pass')     || {}).value || '';
+  var newPass   = (document.getElementById('stu-new-pass')     || {}).value || '';
+  var confPass  = (document.getElementById('stu-confirm-pass') || {}).value || '';
+
+  if (!nisn) { showToast('⚠️ Sesi tidak ditemukan. Login ulang.', '#FEE2E2', '#991B1B'); return; }
+  if (!oldPass) { showToast('⚠️ Masukkan password lama!', '#FEE2E2', '#991B1B'); return; }
+  if (!newPass || newPass.length < 6) { showToast('⚠️ Password baru minimal 6 karakter!', '#FEE2E2', '#991B1B'); return; }
+  if (newPass !== confPass) { showToast('⚠️ Konfirmasi password tidak cocok!', '#FEE2E2', '#991B1B'); return; }
+
+  // Verifikasi password lama dari Supabase
+  try {
+    var data = await sbFetch('/rest/v1/siswa?nisn=eq.' + encodeURIComponent(nisn) + '&select=nisn,password');
+    if (!data || data.length === 0) { showToast('⚠️ Data siswa tidak ditemukan!', '#FEE2E2', '#991B1B'); return; }
+    var siswa = data[0];
+    // Password lama bisa: password field di DB, atau NISN (default)
+    var currentPass = siswa.password || nisn;
+    if (oldPass !== currentPass) { showToast('⚠️ Password lama salah!', '#FEE2E2', '#991B1B'); return; }
+
+    // Simpan password baru ke Supabase
+    await sbFetch('/rest/v1/siswa?nisn=eq.' + encodeURIComponent(nisn), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ password: newPass })
+    });
+
+    // Bersihkan form
+    document.getElementById('stu-old-pass').value    = '';
+    document.getElementById('stu-new-pass').value    = '';
+    document.getElementById('stu-confirm-pass').value = '';
+
+    showToast('✅ Password berhasil diubah!', '#D1FAE5', '#065F46');
+  } catch(e) {
+    console.error('Gagal ubah password siswa:', e);
+    showToast('⚠️ Gagal simpan. Cek koneksi internet.', '#FEE2E2', '#991B1B');
   }
-  // In real system: send API request to server
-  // Here we simulate success
-  document.getElementById('adm-new-pass').value = '';
-  showToast('✅ Password ' + dbGuru[nip].nama + ' berhasil direset!', '#D1FAE5', '#065F46');
+}
+
+
+// ════════════════════════════════════════════════
+// ADMIN — populate dropdown reset sesuai tipe
+// ════════════════════════════════════════════════
+async function adminPopulateResetSelect() {
+  var typeEl = document.getElementById('adm-reset-type');
+  var selectEl = document.getElementById('adm-reset-select');
+  if (!typeEl || !selectEl) return;
+  var type = typeEl.value;
+  selectEl.innerHTML = '<option value="">-- Memuat... --</option>';
+  try {
+    if (type === 'guru') {
+      var guruList = await sbFetch('/rest/v1/guru?select=nip,nama&order=nama');
+      selectEl.innerHTML = '';
+      if (guruList && guruList.length > 0) {
+        guruList.forEach(function(g) {
+          var opt = document.createElement('option');
+          opt.value = g.nip;
+          opt.textContent = g.nama + ' (' + g.nip + ')';
+          selectEl.appendChild(opt);
+        });
+      } else {
+        selectEl.innerHTML = '<option value="">Belum ada guru</option>';
+      }
+    } else {
+      var siswaList = await sbFetch('/rest/v1/siswa?select=nisn,nama,kelas&order=nama&aktif=eq.true');
+      selectEl.innerHTML = '';
+      if (siswaList && siswaList.length > 0) {
+        siswaList.forEach(function(s) {
+          var opt = document.createElement('option');
+          opt.value = s.nisn;
+          opt.textContent = s.nama + ' — ' + (s.kelas||'-') + ' (NISN: ' + s.nisn + ')';
+          selectEl.appendChild(opt);
+        });
+      } else {
+        selectEl.innerHTML = '<option value="">Belum ada siswa</option>';
+      }
+    }
+  } catch(e) {
+    selectEl.innerHTML = '<option value="">Gagal memuat data</option>';
+  }
+}
+
+async function changeAdminSelfPassword() {
+  var newPass  = (document.getElementById('adm-self-pass') || {}).value || '';
+  var confPass = (document.getElementById('adm-self-pass-confirm') || {}).value || '';
+  if (!newPass || newPass.length < 6) { showToast('⚠️ Password minimal 6 karakter!', '#FEE2E2', '#991B1B'); return; }
+  if (newPass !== confPass) { showToast('⚠️ Konfirmasi password tidak cocok!', '#FEE2E2', '#991B1B'); return; }
+  var ok = await saveAdminPassword(newPass);
+  if (ok) {
+    document.getElementById('adm-self-pass').value = '';
+    document.getElementById('adm-self-pass-confirm').value = '';
+    showToast('✅ Password admin berhasil diubah & tersimpan!', '#D1FAE5', '#065F46');
+  } else {
+    showToast('⚠️ Gagal simpan. Cek koneksi internet.', '#FEE2E2', '#991B1B');
+  }
+}
+
+async function adminResetPassword() {
+  var selectEl = document.getElementById('adm-reset-select');
+  var newPass  = document.getElementById('adm-new-pass').value.trim();
+  var typeEl   = document.getElementById('adm-reset-type');
+  var resetType = typeEl ? typeEl.value : 'guru';
+
+  if (!selectEl || !selectEl.value) { showToast('⚠️ Pilih guru/siswa terlebih dahulu!', '#FEE2E2', '#991B1B'); return; }
+  if (!newPass || newPass.length < 6) { showToast('⚠️ Password minimal 6 karakter!', '#FEE2E2', '#991B1B'); return; }
+
+  var targetId = selectEl.value;
+  var targetNama = selectEl.options[selectEl.selectedIndex].text;
+
+  try {
+    if (resetType === 'siswa') {
+      await sbFetch('/rest/v1/siswa?nisn=eq.' + encodeURIComponent(targetId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ password: newPass })
+      });
+    } else {
+      await sbFetch('/rest/v1/guru?nip=eq.' + encodeURIComponent(targetId), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ password: newPass })
+      });
+    }
+    document.getElementById('adm-new-pass').value = '';
+    showToast('✅ Password ' + targetNama + ' berhasil direset ke Supabase!', '#D1FAE5', '#065F46');
+  } catch(e) {
+    console.error('Reset password error:', e);
+    showToast('⚠️ Gagal reset password. Cek koneksi.', '#FEE2E2', '#991B1B');
+  }
 }
 
 function switchAdmTab(name, el) {
@@ -3002,7 +3285,8 @@ function switchAdmTab(name, el) {
   var nav = document.getElementById('adm-nav-'+name);
   if (nav) { nav.style.background='#FEF2F2'; nav.querySelector('.bn-label').style.color='#B91C1C'; }
   // Populate data if needed
-  if (name === 'guru' || name === 'siswa' || name === 'reset') populateAdminPanel();
+  populateAdminPanel();
+  if (name === 'reset') adminPopulateResetSelect();
 }
 
 function showAdminSiswa() { switchAdmTab('siswa', null); }
@@ -4010,7 +4294,7 @@ function doLoginLocal() {
   } else {
     var user = document.getElementById('inp-guru-user').value.trim();
     var pass = document.getElementById('inp-guru-pass').value.trim();
-    if (user === 'admin') { showAdminBadge(); return; }
+    if (user === 'admin') { showLoginError('Tidak dapat terhubung ke server untuk verifikasi admin.'); return; }
     showLoginError('Tidak dapat terhubung ke server. Coba lagi.');
   }
 }
