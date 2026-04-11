@@ -206,7 +206,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 .stat-c .sv{font-size:18px;font-weight:900;font-family:'Poppins',sans-serif;}
 .stat-c .sl{font-size:10px;color:var(--muted);font-weight:600;}
 .cv-blue{color:var(--p);} .cv-green{color:var(--g);}
-.cv-orange{color:#D97706;} .cv-purple{color:#7C3AED);}
+.cv-orange{color:#D97706;} .cv-purple{color:#7C3AED;}
 
 /* Progress card */
 .prog-card{
@@ -726,11 +726,79 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
         </label>
         <input type="password" id="inp-guru-pass" placeholder="Masukkan password">
       </div>
+      <!-- Daftar mandiri -->
+      <div style="text-align:center;margin-top:4px;margin-bottom:2px;">
+        <span style="color:rgba(255,255,255,.45);font-size:11px;font-weight:600;">Belum punya akun? </span>
+        <span onclick="showRegisterGuru()" style="color:#FCD34D;font-size:11px;font-weight:800;cursor:pointer;text-decoration:underline;">Daftar di sini →</span>
+      </div>
     </div>
 
     <button class="btn-login" onclick="doLogin()">🚀 Masuk Sekarang</button>
   </div>
   <div class="login-wm">Developed & Supported by <span>D.D Candra</span> © 2026</div>
+</div>
+
+<!-- ══════════════════════════════
+     HALAMAN REGISTRASI GURU (MANDIRI)
+══════════════════════════════ -->
+<div class="screen" id="pg-register-guru" style="background:linear-gradient(160deg,#0F172A 0%,#1E3A5F 50%,#0F172A 100%);justify-content:center;align-items:center;padding:40px 20px;min-height:100vh;overflow-y:auto;">
+  <div class="login-bg-circle"></div>
+  <div class="login-logo-wrap">
+    <div class="login-logo-icon">📝</div>
+    <div class="login-app-name">SIMPO<span>LIN</span></div>
+    <div class="login-tagline">Daftar Akun Guru Baru</div>
+  </div>
+
+  <div class="login-card" style="max-width:400px;width:100%;">
+    <h2>Daftar Akun Guru</h2>
+    <p>Isi data diri Anda untuk membuat akun</p>
+
+    <div class="field-wrap">
+      <label>NAMA LENGKAP <span style="color:#FCD34D;font-size:10px;">*wajib</span></label>
+      <input type="text" id="reg-nama" placeholder="Contoh: Budi Santoso, S.Pd">
+    </div>
+    <div class="field-wrap">
+      <label>NIP / USERNAME <span style="color:#FCD34D;font-size:10px;">*wajib (untuk login)</span></label>
+      <input type="text" id="reg-nip" placeholder="Masukkan NIP Anda" inputmode="numeric">
+    </div>
+    <div class="field-wrap">
+      <label>MATA PELAJARAN</label>
+      <select id="reg-mapel" style="width:100%;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.12);color:#fff;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;outline:none;">
+        <option value="" style="color:#333;">-- Pilih Mata Pelajaran --</option>
+        <option style="color:#333;">Matematika</option>
+        <option style="color:#333;">IPA</option>
+        <option style="color:#333;">IPS</option>
+        <option style="color:#333;">Bhs. Indonesia</option>
+        <option style="color:#333;">Bhs. Inggris</option>
+        <option style="color:#333;">PKN</option>
+        <option style="color:#333;">Penjaskes</option>
+        <option style="color:#333;">Seni Budaya</option>
+        <option style="color:#333;">TIK</option>
+        <option style="color:#333;">Agama</option>
+        <option style="color:#333;">Lainnya</option>
+      </select>
+    </div>
+    <div class="field-wrap">
+      <label>PASSWORD <span style="color:#FCD34D;font-size:10px;">*min. 6 karakter</span></label>
+      <div style="position:relative;">
+        <input type="password" id="reg-pass" placeholder="Buat password Anda" style="width:100%;box-sizing:border-box;padding-right:44px;">
+        <button type="button" onclick="toggleRegPass()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;color:rgba(255,255,255,.6);">👁️</button>
+      </div>
+    </div>
+    <div class="field-wrap">
+      <label>KONFIRMASI PASSWORD <span style="color:#FCD34D;font-size:10px;">*wajib</span></label>
+      <input type="password" id="reg-pass2" placeholder="Ulangi password Anda">
+    </div>
+
+    <!-- Error box -->
+    <div id="reg-error" style="display:none;background:rgba(239,68,68,.15);border:1.5px solid rgba(239,68,68,.3);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;font-weight:700;color:#FCA5A5;line-height:1.5;"></div>
+
+    <button class="btn-login" onclick="doRegisterGuru()" id="btn-reg-guru">✅ Daftar Sekarang</button>
+
+    <div style="text-align:center;margin-top:14px;">
+      <span onclick="hideRegisterGuru()" style="color:rgba(255,255,255,.5);font-size:12px;font-weight:700;cursor:pointer;">← Kembali ke Login</span>
+    </div>
+  </div>
 </div>
 
 <!-- ══════════════════════════════
@@ -995,10 +1063,21 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
       <div class="sec">
         <div class="sec-title" style="margin-bottom:10px;">⚡ Aksi Cepat</div>
         <div class="act-grid">
-          <button class="act-btn ab1" onclick="openAddMateriModal()"><div class="act-ico">📚</div><div class="act-txt"><div class="at">Upload Materi</div><div class="as">Link YouTube/Drive</div></div></button>
+          <button class="act-btn ab1" onclick="openAddMateriModal()"><div class="act-ico">📚</div><div class="act-txt"><div class="at">Upload Materi</div><div class="as">Link/File materi</div></div></button>
           <button class="act-btn ab2" onclick="openBuatTugasModal()"><div class="act-ico">✍️</div><div class="act-txt"><div class="at">Buat Tugas</div><div class="as">Set deadline & bobot</div></div></button>
           <button class="act-btn ab3" onclick="openBuatUjianModal()"><div class="act-ico">📝</div><div class="act-txt"><div class="at">Buat Ujian/Kuis</div><div class="as">Bank soal & timer</div></div></button>
           <button class="act-btn ab4" onclick="switchTeaTab('siswa', document.querySelectorAll('#pg-teacher .bn-item')[1])"><div class="act-ico">📤</div><div class="act-txt"><div class="at">Upload Siswa</div><div class="as">Import via Excel</div></div></button>
+        </div>
+      </div>
+
+      <!-- DAFTAR MATERI GURU -->
+      <div class="sec" style="margin-top:4px;">
+        <div class="sec-hd">
+          <div class="sec-title">📚 Daftar Materi</div>
+          <a class="sec-link" href="#" onclick="loadMateriGuru();return false;">🔄 Refresh</a>
+        </div>
+        <div id="tea-materi-list" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="text-align:center;padding:16px;color:#64748B;font-size:12px;">⏳ Memuat materi...</div>
         </div>
       </div>
     </div>
@@ -1589,7 +1668,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
       </div>
 
       <!-- Ganti Password Admin sendiri -->
-      <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px;margin-bottom:14px;">
         <div style="font-size:13px;font-weight:800;color:var(--text);">🛡️ Ganti Password Admin</div>
         <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:10px;">
           <div style="font-size:11px;color:#1D4ED8;font-weight:600;line-height:1.5;">Password default admin: <strong>admin1234</strong>. Segera ganti untuk keamanan!</div>
@@ -1603,6 +1682,41 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
           <input type="password" id="adm-self-pass-confirm" placeholder="Ulangi password baru" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
         </div>
         <button onclick="changeAdminSelfPassword()" style="padding:11px;border-radius:12px;border:none;background:linear-gradient(90deg,#1D4ED8,#2563EB);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(37,99,235,.3);">🛡️ Simpan Password Admin</button>
+      </div>
+
+      <!-- Tambah Guru Baru -->
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:13px;font-weight:800;color:var(--text);">👨‍🏫 Tambah Akun Guru Baru</div>
+          <button onclick="testKoneksiSupabase()" style="padding:5px 10px;border-radius:8px;border:1.5px solid #CBD5E1;background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:10px;font-weight:700;color:#64748B;cursor:pointer;">🔌 Test Koneksi</button>
+        </div>
+        <div id="guru-form-info" style="background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:12px;padding:10px;">
+          <div style="font-size:11px;color:#065F46;font-weight:600;line-height:1.5;">Daftarkan guru baru agar bisa login. NIP sebagai username, password minimal 6 karakter.</div>
+        </div>
+        <div class="s-field" style="margin:0;">
+          <label>NAMA LENGKAP GURU</label>
+          <input type="text" id="adm-new-guru-nama" placeholder="Contoh: Budi Santoso, S.Pd" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+        </div>
+        <div class="s-field" style="margin:0;">
+          <label>NIP / USERNAME</label>
+          <input type="text" id="adm-new-guru-nip" placeholder="Contoh: 198001012005011001" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;" inputmode="numeric">
+        </div>
+        <div class="s-field" style="margin:0;">
+          <label>MATA PELAJARAN</label>
+          <select id="adm-new-guru-mapel" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+            <option value="">-- Pilih Mata Pelajaran --</option>
+            <option>Matematika</option><option>IPA</option><option>IPS</option>
+            <option>Bhs. Indonesia</option><option>Bhs. Inggris</option><option>PKN</option>
+            <option>Penjaskes</option><option>Seni Budaya</option><option>TIK</option><option>Agama</option>
+          </select>
+        </div>
+        <div class="s-field" style="margin:0;">
+          <label>PASSWORD (min. 6 karakter)</label>
+          <input type="text" id="adm-new-guru-pass" placeholder="Contoh: guru123" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+        </div>
+        <!-- Error / Status box -->
+        <div id="guru-form-error" style="display:none;background:#FEE2E2;border:1.5px solid #FECACA;border-radius:10px;padding:10px 12px;font-size:11px;font-weight:700;color:#991B1B;line-height:1.6;word-break:break-all;"></div>
+        <button onclick="tambahGuruBaru()" id="btn-daftarkan-guru" style="padding:11px;border-radius:12px;border:none;background:linear-gradient(90deg,#059669,#10B981);color:#fff;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(5,150,105,.3);">👨‍🏫 Daftarkan Guru</button>
       </div>
     </div>
 
@@ -1865,19 +1979,12 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
       <div id="materi-file-dropzone" onclick="document.getElementById('materi-file-input').click()"
         style="border:2px dashed #CBD5E1;border-radius:12px;padding:16px;text-align:center;cursor:pointer;background:#F8FAFC;transition:border-color .2s;">
         <div style="font-size:24px;margin-bottom:6px;">📁</div>
-        <div id="materi-file-label" style="font-size:12px;font-weight:700;color:#64748B;">Klik atau seret file ke sini</div>
-        <div style="font-size:10px;color:#94A3B8;margin-top:3px;font-weight:600;">PDF, Word, Excel, gambar, video — maks. 5MB</div>
+        <div id="materi-file-label" style="font-size:12px;font-weight:700;color:#64748B;">Klik atau seret file ke sini (bisa lebih dari 1)</div>
+        <div style="font-size:10px;color:#94A3B8;margin-top:3px;font-weight:600;">PDF, Word, Excel, gambar, video — maks. 5MB per file</div>
       </div>
       <input type="file" id="materi-file-input" accept="*/*" style="display:none;"
-        onchange="handleMateriFile(this)">
-      <div id="materi-file-preview" style="display:none;margin-top:8px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;padding:10px 12px;display:none;align-items:center;gap:8px;">
-        <span id="materi-file-icon" style="font-size:20px;">📄</span>
-        <div style="flex:1;min-width:0;">
-          <div id="materi-file-name" style="font-size:12px;font-weight:800;color:#065F46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">-</div>
-          <div id="materi-file-size" style="font-size:10px;color:#059669;font-weight:600;margin-top:2px;">-</div>
-        </div>
-        <button onclick="clearMateriFile()" style="background:none;border:none;font-size:16px;cursor:pointer;color:#991B1B;padding:0 4px;">✕</button>
-      </div>
+        multiple onchange="handleMateriFile(this)">
+      <div id="materi-file-preview" style="display:none;margin-top:8px;flex-direction:column;gap:6px;">
     </div>
     <div class="s-field">
       <label>MATA PELAJARAN</label>
@@ -2213,6 +2320,148 @@ function setRole(role, btn) {
 }
 
 // ════════════════════════════════════════════════
+// REGISTRASI GURU MANDIRI
+// ════════════════════════════════════════════════
+
+function showRegisterGuru() {
+  // Bersihkan form
+  ['reg-nama','reg-nip','reg-pass','reg-pass2'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  var mapelEl = document.getElementById('reg-mapel');
+  if (mapelEl) mapelEl.value = '';
+  var errEl = document.getElementById('reg-error');
+  if (errEl) { errEl.style.display = 'none'; errEl.innerHTML = ''; }
+  // Tampilkan halaman registrasi
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var pg = document.getElementById('pg-register-guru');
+  if (pg) pg.classList.add('active');
+}
+
+function hideRegisterGuru() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('pg-login').classList.add('active');
+  // Pastikan tab guru aktif
+  var tabGuru = document.querySelectorAll('.role-tab')[1];
+  if (tabGuru) setRole('guru', tabGuru);
+}
+
+function toggleRegPass() {
+  var p = document.getElementById('reg-pass');
+  if (p) p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+function setRegError(msg) {
+  var el = document.getElementById('reg-error');
+  if (!el) return;
+  if (!msg) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = '⚠️ ' + msg;
+}
+
+async function doRegisterGuru() {
+  var nama  = (document.getElementById('reg-nama')  || {}).value || '';
+  var nip   = (document.getElementById('reg-nip')   || {}).value || '';
+  var mapel = (document.getElementById('reg-mapel') || {}).value || '';
+  var pass  = (document.getElementById('reg-pass')  || {}).value || '';
+  var pass2 = (document.getElementById('reg-pass2') || {}).value || '';
+
+  nama = nama.trim(); nip = nip.trim(); pass = pass.trim(); pass2 = pass2.trim();
+  setRegError('');
+
+  // Validasi
+  if (!nama)           { setRegError('Nama lengkap wajib diisi!'); return; }
+  if (!nip)            { setRegError('NIP / Username wajib diisi!'); return; }
+  if (nip.length < 4)  { setRegError('NIP terlalu pendek, minimal 4 karakter!'); return; }
+  if (!pass)           { setRegError('Password wajib diisi!'); return; }
+  if (pass.length < 6) { setRegError('Password minimal 6 karakter!'); return; }
+  if (pass !== pass2)  { setRegError('Konfirmasi password tidak cocok!'); return; }
+
+  var btn = document.getElementById('btn-reg-guru');
+  if (btn) { btn.textContent = '⏳ Mendaftarkan...'; btn.disabled = true; }
+
+  try {
+    // Cek apakah NIP sudah terdaftar
+    var chk = await fetch(SUPABASE_URL + '/rest/v1/guru?nip=eq.' + encodeURIComponent(nip) + '&select=nip', {
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+    if (chk.ok) {
+      var chkData = await chk.json();
+      if (chkData && chkData.length > 0) {
+        setRegError('NIP ' + nip + ' sudah terdaftar! Silakan langsung login atau gunakan NIP yang benar.');
+        return;
+      }
+    }
+
+    // Coba insert — 3 percobaan dengan payload berbeda
+    var payloads = [
+      { nip, nama, mapel: mapel||'Umum', password: pass, aktif: true, hp: '', email: '', kelas: [], created_at: new Date().toISOString() },
+      { nip, nama, mapel: mapel||'Umum', password: pass, aktif: true, hp: '', email: '', created_at: new Date().toISOString() },
+      { nip, nama, mapel: mapel||'Umum', password: pass, aktif: true }
+    ];
+
+    var berhasil = false;
+    var lastErr  = '';
+
+    for (var i = 0; i < payloads.length; i++) {
+      var res = await fetch(SUPABASE_URL + '/rest/v1/guru', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payloads[i])
+      });
+      if (res.ok) { berhasil = true; break; }
+      try { lastErr = await res.text(); } catch(e2) { lastErr = 'HTTP ' + res.status; }
+      console.warn('Register attempt ' + (i+1) + ' gagal:', res.status, lastErr);
+    }
+
+    if (berhasil) {
+      // Tampilkan pesan sukses dan langsung ke login
+      setRegError('');
+      // Ganti error box jadi success
+      var errEl = document.getElementById('reg-error');
+      if (errEl) {
+        errEl.style.display = 'block';
+        errEl.style.background = 'rgba(5,150,105,.2)';
+        errEl.style.borderColor = 'rgba(5,150,105,.4)';
+        errEl.style.color = '#6EE7B7';
+        errEl.innerHTML = '✅ Akun berhasil dibuat! Anda akan diarahkan ke halaman login...';
+      }
+      // Isi form login otomatis dan kembali ke login setelah 2 detik
+      setTimeout(function() {
+        hideRegisterGuru();
+        var nipInput  = document.getElementById('inp-guru-user');
+        var passInput = document.getElementById('inp-guru-pass');
+        if (nipInput)  nipInput.value  = nip;
+        if (passInput) passInput.value = pass;
+        showToast('✅ Akun guru berhasil dibuat! Silakan login.', '#D1FAE5', '#065F46');
+      }, 2000);
+    } else {
+      // Analisa error
+      if (lastErr.includes('duplicate') || lastErr.includes('unique')) {
+        setRegError('NIP sudah terdaftar! Silakan langsung login.');
+      } else if (lastErr.includes('permission') || lastErr.includes('403') || lastErr.includes('401')) {
+        setRegError('Pendaftaran ditolak server. Hubungi admin untuk mengaktifkan fitur registrasi mandiri.');
+      } else if (lastErr.includes('relation') || lastErr.includes('404')) {
+        setRegError('Tabel belum siap. Admin perlu menjalankan SQL setup terlebih dahulu.');
+      } else {
+        setRegError('Gagal mendaftar: ' + (lastErr.substring(0, 120) || 'Cek koneksi internet.'));
+      }
+    }
+  } catch(e) {
+    console.error('doRegisterGuru error:', e);
+    setRegError('Error: ' + (e.message || 'Tidak bisa terhubung ke server.'));
+  } finally {
+    if (btn) { btn.textContent = '✅ Daftar Sekarang'; btn.disabled = false; }
+  }
+}
+
+// ════════════════════════════════════════════════
 // LOGIN REAL — Supabase (menggantikan data dummy)
 // ════════════════════════════════════════════════
 
@@ -2272,18 +2521,36 @@ async function doLogin() {
         return;
       }
 
-      // Cek NIP ke Supabase
-      var guruData = await sbFetch('/rest/v1/guru?nip=eq.' + user + '&select=*');
+      // Cek NIP ke Supabase — gunakan encodeURIComponent agar NIP dengan karakter apapun aman
+      var guruData = null;
+      try {
+        guruData = await sbFetch('/rest/v1/guru?nip=eq.' + encodeURIComponent(user) + '&select=*');
+      } catch(sbErr) {
+        console.warn('sbFetch guru error:', sbErr);
+        guruData = null;
+      }
 
       // Fallback ke data lokal
       if (!guruData || guruData.length === 0) {
         var localGuru = dbGuru[user];
-        if (!localGuru) { showLoginError('NIP/Username tidak ditemukan.'); return; }
+        if (!localGuru) { showLoginError('NIP/Username tidak ditemukan. Pastikan NIP sudah didaftarkan admin.'); return; }
         loginGuruSuccess(localGuru.nama, user, pass);
         return;
       }
 
       var guru = guruData[0];
+      // Cek password: jika sudah diset harus cocok; jika belum (null/kosong) izinkan & simpan
+      if (guru.password && guru.password !== pass) {
+        showLoginError('Password salah. Hubungi admin jika lupa password.');
+        return;
+      }
+      if (!guru.password && pass.length >= 6) {
+        sbFetch('/rest/v1/guru?nip=eq.' + encodeURIComponent(user), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ password: pass })
+        }).catch(function(){});
+      }
       loginGuruSuccess(guru.nama, user, pass, guru);
     }
 
@@ -2367,11 +2634,13 @@ function loginGuruSuccess(nama, nip, pass, guruObj) {
     })
   }).catch(function(){});
   showScreen('pg-teacher');
-  // Load foto profil dari Supabase (sinkron antar device)
+  // Load foto profil, materi, dan tugas dari Supabase
   setTimeout(function(){
     restoreGuruPhoto();
     loadViolations();
-  }, 500);
+    loadMateriGuru();
+    updateTeacherStats();
+  }, 600);
 }
 
 // Fallback login lokal (offline mode)
@@ -2398,14 +2667,25 @@ async function doLoginLocal() {
     var mapel = document.getElementById('inp-guru-mapel') ? document.getElementById('inp-guru-mapel').value : '';
     if (user === 'admin') { var adminOk2 = await checkAdminPassword(pass2); if (!adminOk2) { showLoginError('Password admin salah!'); return; } showAdminBadge(); return; }
     if (!user || !pass2) { showLoginError('NIP dan password wajib diisi.'); return; }
-    if (!mapel) { showLoginError('Pilih mata pelajaran terlebih dahulu.'); return; }
+    // mapel diambil dari database guru, tidak perlu validasi di login
     var btn3 = document.getElementById('login-btn');
     if (btn3) { btn3.textContent = '⏳ Memeriksa...'; btn3.disabled = true; }
     try {
       var gData = await sbFetch('/rest/v1/guru?nip=eq.'+encodeURIComponent(user)+'&select=*');
       if (!gData || gData.length === 0) { showLoginError('NIP tidak ditemukan. Hubungi admin.'); return; }
       var guru = gData[0];
-      if (guru.password && guru.password !== pass2) { showLoginError('Password salah.'); return; }
+      // Jika password sudah diset harus cocok; jika belum diset (null/kosong) izinkan login pertama
+      if (guru.password && guru.password !== pass2) {
+        showLoginError('Password salah. Hubungi admin jika lupa password.');
+        return;
+      }
+      if (!guru.password && pass2.length >= 6) {
+        sbFetch('/rest/v1/guru?nip=eq.' + encodeURIComponent(user), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ password: pass2 })
+        }).catch(function(){});
+      }
       loginGuruSuccess(guru.nama || user, user, pass2, guru);
     } catch(e) { showLoginError('Gagal terhubung ke server. Cek koneksi.');
     } finally { if (btn3) { btn3.textContent = '🚀 Masuk Sekarang'; btn3.disabled = false; } }
@@ -2554,44 +2834,7 @@ function showScreen(id) {
 }
 
 // Restore session on page load
-function restoreSession() {
-  restoreKopSettings();
-  restoreGuruPhoto();
-  try {
-    var savedScreen = localStorage.getItem('currentScreen');
-    var savedRole   = localStorage.getItem('currentRole');
-    if (!savedScreen || savedScreen === 'pg-login') return;
-
-    currentRole = savedRole || 'siswa';
-
-    if (savedScreen === 'pg-student') {
-      var stuH = localStorage.getItem('stuHeader');
-      if (stuH) {
-        var el = document.getElementById('stu-header-name');
-        if (el) el.innerHTML = stuH;
-      }
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById('pg-student').classList.add('active');
-      var stuKelas = '';
-      try { stuKelas = localStorage.getItem('stuKelas') || ''; } catch(e){}
-      setTimeout(function(){ loadUjianForSiswa(stuKelas); loadNotifSiswa(stuKelas); startStuPolling(stuKelas); }, 500);
-    } else if (savedScreen === 'pg-teacher') {
-      var teaH = localStorage.getItem('teaHeader');
-      if (teaH) {
-        var el2 = document.getElementById('tea-header-name');
-        if (el2) el2.innerHTML = teaH;
-      }
-      currentGuruNIP = localStorage.getItem('guruNip') || currentGuruNIP || '';
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById('pg-teacher').classList.add('active');
-      setTimeout(function(){ restoreGuruPhoto(); loadViolations(); }, 500);
-    } else if (savedScreen === 'pg-admin') {
-      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-      document.getElementById('pg-admin').classList.add('active');
-      setTimeout(function(){ populateAdminPanel(); }, 300);
-    }
-  } catch(e) {}
-}
+// restoreSession — see full definition below
 
 // Student tabs
 function switchStuTab(name, el) {
@@ -2613,6 +2856,7 @@ function switchTeaTab(name, el) {
   document.querySelectorAll('#pg-teacher .bn-item').forEach(b => b.classList.remove('active-tea'));
   if (el) el.classList.add('active-tea');
   try { localStorage.setItem('teaActiveTab', name); } catch(e){}
+  if (name === 'beranda') loadMateriGuru();
   if (name === 'tugas') { loadTugasGuru(); loadBankSoalFromSupabase(); }
   if (name === 'siswa') loadSiswaNyata();
 }
@@ -3259,6 +3503,155 @@ async function adminPopulateResetSelect() {
   } catch(e) {
     selectEl.innerHTML = '<option value="">Gagal memuat data</option>';
   }
+}
+
+
+// ════════════════════════════════════════════════
+// ADMIN — Tambah Guru Baru (robust version)
+// ════════════════════════════════════════════════
+function _setGuruFormError(msg) {
+  var el = document.getElementById('guru-form-error');
+  if (!el) return;
+  if (!msg) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = '❌ ' + msg;
+}
+function _setGuruFormInfo(msg, color) {
+  var el = document.getElementById('guru-form-info');
+  if (!el) return;
+  el.style.background = color === 'green' ? '#F0FDF4' : color === 'yellow' ? '#FFFBEB' : '#F0FDF4';
+  el.style.borderColor = color === 'green' ? '#A7F3D0' : color === 'yellow' ? '#FDE68A' : '#A7F3D0';
+  el.innerHTML = '<div style="font-size:11px;color:' + (color === 'green' ? '#065F46' : color === 'yellow' ? '#92400E' : '#065F46') + ';font-weight:600;line-height:1.5;">' + msg + '</div>';
+}
+
+async function testKoneksiSupabase() {
+  _setGuruFormInfo('⏳ Menguji koneksi ke Supabase...', 'yellow');
+  try {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/guru?select=nip&limit=1', {
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + SUPABASE_ANON
+      }
+    });
+    if (res.ok) {
+      var data = await res.json();
+      _setGuruFormInfo('✅ Koneksi Supabase OK! Tabel guru ditemukan. (' + (data.length) + ' data)', 'green');
+    } else {
+      var errText = await res.text();
+      _setGuruFormInfo('⚠️ Koneksi gagal: HTTP ' + res.status + ' — ' + errText.substring(0,120), 'yellow');
+    }
+  } catch(e) {
+    _setGuruFormInfo('❌ Tidak bisa terhubung ke Supabase: ' + e.message, 'yellow');
+  }
+}
+
+async function tambahGuruBaru() {
+  var nama  = (document.getElementById('adm-new-guru-nama')  || {}).value || '';
+  var nip   = (document.getElementById('adm-new-guru-nip')   || {}).value || '';
+  var mapel = (document.getElementById('adm-new-guru-mapel') || {}).value || '';
+  var pass  = (document.getElementById('adm-new-guru-pass')  || {}).value || '';
+
+  nama = nama.trim(); nip = nip.trim(); pass = pass.trim();
+  _setGuruFormError('');
+
+  if (!nama)           { _setGuruFormError('Nama guru wajib diisi!'); return; }
+  if (!nip)            { _setGuruFormError('NIP/Username wajib diisi!'); return; }
+  if (!mapel)          { _setGuruFormError('Pilih mata pelajaran!'); return; }
+  if (pass.length < 6) { _setGuruFormError('Password minimal 6 karakter!'); return; }
+
+  var btn = document.getElementById('btn-daftarkan-guru');
+  if (btn) { btn.textContent = '⏳ Mendaftarkan...'; btn.disabled = true; }
+  _setGuruFormInfo('⏳ Sedang mendaftarkan guru...', 'yellow');
+
+  // Helper: coba insert satu payload, return { ok, status, body }
+  async function tryInsert(payload) {
+    try {
+      var r = await fetch(SUPABASE_URL + '/rest/v1/guru', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+      var body = '';
+      try { body = await r.text(); } catch(e2) {}
+      return { ok: r.ok, status: r.status, body: body };
+    } catch(netErr) {
+      return { ok: false, status: 0, body: 'Network error: ' + netErr.message };
+    }
+  }
+
+  try {
+    // Cek duplikat NIP
+    var chkRes = await fetch(SUPABASE_URL + '/rest/v1/guru?nip=eq.' + encodeURIComponent(nip) + '&select=nip', {
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+    if (chkRes.ok) {
+      var chkData = await chkRes.json();
+      if (chkData && chkData.length > 0) {
+        _setGuruFormError('NIP ' + nip + ' sudah terdaftar! Gunakan NIP yang berbeda.');
+        _setGuruFormInfo('Daftarkan guru baru agar bisa login. NIP sebagai username, password minimal 6 karakter.', 'green');
+        return;
+      }
+    }
+
+    // ATTEMPT 1: insert dengan kelas sebagai array TEXT[]
+    var attempt1 = await tryInsert({ nip, nama, mapel, password: pass, aktif: true, created_at: new Date().toISOString(), email: '', hp: '', kelas: [] });
+    if (attempt1.ok) { _onGuruBerhasil(nama, nip); return; }
+
+    console.warn('Attempt 1 gagal:', attempt1.status, attempt1.body);
+
+    // ATTEMPT 2: insert tanpa kolom kelas (mungkin kolom belum ada atau tipe salah)
+    var attempt2 = await tryInsert({ nip, nama, mapel, password: pass, aktif: true, created_at: new Date().toISOString(), email: '', hp: '' });
+    if (attempt2.ok) { _onGuruBerhasil(nama, nip); return; }
+
+    console.warn('Attempt 2 gagal:', attempt2.status, attempt2.body);
+
+    // ATTEMPT 3: payload minimal — hanya kolom wajib
+    var attempt3 = await tryInsert({ nip, nama, mapel, password: pass, aktif: true });
+    if (attempt3.ok) { _onGuruBerhasil(nama, nip); return; }
+
+    console.warn('Attempt 3 gagal:', attempt3.status, attempt3.body);
+
+    // Semua gagal — tampilkan error detail
+    var errDetail = attempt3.body || attempt2.body || attempt1.body || 'Unknown error';
+    var errMsg = '';
+    if (attempt3.status === 0)   errMsg = '❌ Tidak ada koneksi internet atau Supabase tidak bisa dicapai.';
+    else if (attempt3.status === 401 || attempt3.status === 403)
+      errMsg = '🔒 Akses ditolak (HTTP ' + attempt3.status + '). RLS policy belum diset.\n\nJalankan SQL ini di Supabase:\nCREATE POLICY "insert_guru" ON public.guru FOR INSERT WITH CHECK (true);';
+    else if (attempt3.status === 404)
+      errMsg = '❓ Tabel "guru" tidak ditemukan (HTTP 404). Pastikan tabel sudah dibuat.';
+    else if (errDetail.includes('duplicate') || errDetail.includes('unique'))
+      errMsg = '⚠️ NIP sudah terdaftar!';
+    else if (errDetail.includes('column') || errDetail.includes('schema'))
+      errMsg = '⚠️ Kolom tidak cocok (HTTP ' + attempt3.status + '): ' + errDetail.substring(0, 150);
+    else
+      errMsg = 'HTTP ' + attempt3.status + ': ' + errDetail.substring(0, 200);
+
+    _setGuruFormError(errMsg);
+    _setGuruFormInfo('Daftarkan guru baru agar bisa login. NIP sebagai username, password minimal 6 karakter.', 'green');
+
+  } catch(e) {
+    console.error('tambahGuruBaru exception:', e);
+    _setGuruFormError('Error tidak terduga: ' + e.message);
+    _setGuruFormInfo('Daftarkan guru baru agar bisa login. NIP sebagai username, password minimal 6 karakter.', 'green');
+  } finally {
+    if (btn) { btn.textContent = '👨‍🏫 Daftarkan Guru'; btn.disabled = false; }
+  }
+}
+
+function _onGuruBerhasil(nama, nip) {
+  document.getElementById('adm-new-guru-nama').value  = '';
+  document.getElementById('adm-new-guru-nip').value   = '';
+  document.getElementById('adm-new-guru-mapel').value = '';
+  document.getElementById('adm-new-guru-pass').value  = '';
+  _setGuruFormError('');
+  _setGuruFormInfo('✅ Guru <strong>' + nama + '</strong> berhasil didaftarkan! NIP: ' + nip + '. Guru dapat langsung login.', 'green');
+  showToast('✅ Guru ' + nama + ' berhasil didaftarkan!', '#D1FAE5', '#065F46');
+  setTimeout(function(){ populateAdminPanel(); }, 600);
 }
 
 async function changeAdminSelfPassword() {
@@ -4458,6 +4851,7 @@ async function simpanTugas() {
       method: 'POST',
       body: JSON.stringify({
         judul: judul, deskripsi: deskripsi, kelas: kelas,
+        mapel_nama: mapel,
         deadline: new Date(deadline).toISOString(),
         bobot_nilai: parseInt(bobot), aktif: true,
         created_at: new Date().toISOString()
@@ -4467,9 +4861,10 @@ async function simpanTugas() {
     document.getElementById('tugas-judul').value = '';
     document.getElementById('tugas-deskripsi').value = '';
     showToast('✅ Tugas "' + judul + '" berhasil dibuat!', '#D1FAE5', '#065F46');
-    // Update badge
+    // Update badge & refresh list
     var badge = document.querySelector('#pg-teacher .bn-badge');
     if (badge) { badge.textContent = (parseInt(badge.textContent)||0)+1; badge.style.display='flex'; }
+    setTimeout(function(){ loadTugasGuru(); updateTeacherStats(); }, 400);
   } catch(err) {
     showToast('⚠️ Gagal simpan. Cek koneksi internet.', '#FEE2E2', '#991B1B');
   } finally {
@@ -4531,56 +4926,87 @@ function closeAddMateriModal(e) {
     resetMateriModal();
   }
 }
-// ── File handler untuk materi ──
-var _materiFileData = null; // { name, size, type, base64 }
+// ── File handler untuk materi (multiple files) ──
+var _materiFileData = []; // array of { name, size, type, base64 }
 
 function handleMateriFile(input) {
-  var file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) {
-    showToast('⚠️ File maksimal 5MB!', '#FEE2E2', '#991B1B');
-    input.value = '';
-    return;
+  var files = Array.from(input.files);
+  if (!files.length) return;
+
+  var oversized = files.filter(function(f){ return f.size > 5 * 1024 * 1024; });
+  if (oversized.length > 0) {
+    showToast('⚠️ File "' + oversized[0].name + '" melebihi 5MB!', '#FEE2E2', '#991B1B');
+    // Tetap proses file yang valid
+    files = files.filter(function(f){ return f.size <= 5 * 1024 * 1024; });
+    if (!files.length) { input.value = ''; return; }
   }
-  var reader = new FileReader();
-  reader.onload = function(ev) {
-    _materiFileData = { name: file.name, size: file.size, type: file.type, base64: ev.target.result };
-    // Update UI dropzone
-    var dropzone = document.getElementById('materi-file-dropzone');
-    if (dropzone) dropzone.style.borderColor = '#059669';
-    var label = document.getElementById('materi-file-label');
-    if (label) label.textContent = 'File dipilih ✅';
-    // Tampilkan preview
+
+  var preview = document.getElementById('materi-file-preview');
+  var label   = document.getElementById('materi-file-label');
+  var dropzone= document.getElementById('materi-file-dropzone');
+
+  // Reset preview area
+  _materiFileData = [];
+  if (preview) { preview.style.display = 'flex'; preview.innerHTML = ''; }
+  if (dropzone) dropzone.style.borderColor = '#059669';
+  if (label) label.textContent = files.length + ' file dipilih ✅';
+
+  files.forEach(function(file, idx) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      var fd = { name: file.name, size: file.size, type: file.type, base64: ev.target.result };
+      _materiFileData.push(fd);
+
+      // Pilih ikon berdasarkan tipe
+      var icon = '📄';
+      if (file.type.startsWith('image/'))          icon = '🖼️';
+      else if (file.type.includes('pdf'))           icon = '📕';
+      else if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) icon = '📝';
+      else if (file.type.includes('sheet') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) icon = '📊';
+      else if (file.type.startsWith('video/'))      icon = '🎬';
+      else if (file.type.startsWith('audio/'))      icon = '🎵';
+
+      var item = document.createElement('div');
+      item.id = 'materi-file-item-' + idx;
+      item.style.cssText = 'background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px;';
+      item.innerHTML = '<span style="font-size:18px;">' + icon + '</span>'
+        + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:12px;font-weight:800;color:#065F46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + file.name + '</div>'
+          + '<div style="font-size:10px;color:#059669;font-weight:600;margin-top:2px;">' + (file.size/1024).toFixed(0) + ' KB</div>'
+        + '</div>'
+        + '<button onclick="removeMateriFile(' + idx + ')" style="background:none;border:none;font-size:16px;cursor:pointer;color:#991B1B;padding:0 4px;">✕</button>';
+      if (preview) preview.appendChild(item);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeMateriFile(idx) {
+  _materiFileData.splice(idx, 1);
+  var item = document.getElementById('materi-file-item-' + idx);
+  if (item) item.remove();
+  var label = document.getElementById('materi-file-label');
+  var dropzone = document.getElementById('materi-file-dropzone');
+  if (_materiFileData.length === 0) {
+    if (label) label.textContent = 'Klik atau seret file ke sini (bisa lebih dari 1)';
+    if (dropzone) dropzone.style.borderColor = '#CBD5E1';
     var preview = document.getElementById('materi-file-preview');
-    var nameEl  = document.getElementById('materi-file-name');
-    var sizeEl  = document.getElementById('materi-file-size');
-    var iconEl  = document.getElementById('materi-file-icon');
-    if (preview) { preview.style.display = 'flex'; }
-    if (nameEl)  nameEl.textContent = file.name;
-    if (sizeEl)  sizeEl.textContent = (file.size / 1024).toFixed(0) + ' KB';
-    // Pilih ikon berdasarkan tipe file
-    var icon = '📄';
-    if (file.type.startsWith('image/'))          icon = '🖼️';
-    else if (file.type.includes('pdf'))           icon = '📕';
-    else if (file.type.includes('word') || file.name.endsWith('.docx') || file.name.endsWith('.doc')) icon = '📝';
-    else if (file.type.includes('sheet') || file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) icon = '📊';
-    else if (file.type.startsWith('video/'))      icon = '🎬';
-    else if (file.type.startsWith('audio/'))      icon = '🎵';
-    if (iconEl) iconEl.textContent = icon;
-  };
-  reader.readAsDataURL(file);
+    if (preview) preview.style.display = 'none';
+  } else {
+    if (label) label.textContent = _materiFileData.length + ' file dipilih ✅';
+  }
 }
 
 function clearMateriFile() {
-  _materiFileData = null;
+  _materiFileData = [];
   var input = document.getElementById('materi-file-input');
   if (input) input.value = '';
   var dropzone = document.getElementById('materi-file-dropzone');
   if (dropzone) dropzone.style.borderColor = '#CBD5E1';
   var label = document.getElementById('materi-file-label');
-  if (label) label.textContent = 'Klik atau seret file ke sini';
+  if (label) label.textContent = 'Klik atau seret file ke sini (bisa lebih dari 1)';
   var preview = document.getElementById('materi-file-preview');
-  if (preview) preview.style.display = 'none';
+  if (preview) { preview.style.display = 'none'; preview.innerHTML = ''; }
 }
 
 // Drag-and-drop support untuk materi file dropzone
@@ -4600,9 +5026,9 @@ document.addEventListener('DOMContentLoaded', function() {
     e.preventDefault();
     dropzone.style.borderColor = '#CBD5E1';
     dropzone.style.background  = '#F8FAFC';
-    var file = e.dataTransfer.files[0];
-    if (!file) return;
-    var fakeInput = { files: [file] };
+    var files = e.dataTransfer.files;
+    if (!files || !files.length) return;
+    var fakeInput = { files: files };
     handleMateriFile(fakeInput);
   });
 });
@@ -4611,6 +5037,7 @@ function resetMateriModal() {
   document.getElementById('materi-judul').value = '';
   document.getElementById('materi-link').value  = '';
   clearMateriFile();
+  _materiFileData = [];
 }
 
 async function simpanMateri() {
@@ -4620,51 +5047,69 @@ async function simpanMateri() {
 
   // Validasi: judul wajib, link ATAU file harus ada salah satu
   if (!judul) { showToast('⚠️ Judul materi wajib diisi!', '#FEE2E2', '#991B1B'); return; }
-  if (!link && !_materiFileData) {
+  if (!link && (!_materiFileData || _materiFileData.length === 0)) {
     showToast('⚠️ Isi minimal salah satu: Link atau File!', '#FEE2E2', '#991B1B'); return;
-  }
-
-  // Tentukan tipe materi
-  var tipe = 'dokumen';
-  if (link) {
-    if (link.includes('youtube') || link.includes('youtu.be')) tipe = 'video';
-    else if (link.includes('drive.google.com')) tipe = 'gdrive';
-  }
-  if (_materiFileData) {
-    if (_materiFileData.type.startsWith('video/'))      tipe = 'video';
-    else if (_materiFileData.type.startsWith('image/')) tipe = 'gambar';
-    else                                                 tipe = 'dokumen';
   }
 
   var btn = document.querySelector('#add-materi-modal .modal-save');
   if (btn) { btn.textContent = '⏳ Menyimpan...'; btn.disabled = true; }
 
   try {
-    var payload = {
-      judul:      judul,
-      url:        link || null,
-      tipe:       tipe,
-      mapel:      mapel || null,
-      aktif:      true,
-      created_at: new Date().toISOString()
-    };
-    // Kalau ada file, simpan base64 di kolom file_data
-    if (_materiFileData) {
-      payload.file_name = _materiFileData.name;
-      payload.file_type = _materiFileData.type;
-      payload.file_data = _materiFileData.base64;
+    // Jika ada link, simpan sebagai 1 materi
+    if (link) {
+      var tipe = 'dokumen';
+      if (link.includes('youtube') || link.includes('youtu.be')) tipe = 'video';
+      else if (link.includes('drive.google.com')) tipe = 'gdrive';
+
+      await sbFetch('/rest/v1/materi', {
+        method: 'POST',
+        body: JSON.stringify({
+          judul: judul, url: link, tipe: tipe,
+          mapel: mapel || null, aktif: true,
+          created_at: new Date().toISOString()
+        })
+      });
     }
 
-    await sbFetch('/rest/v1/materi', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+    // Jika ada file (bisa lebih dari 1), simpan tiap file sebagai materi terpisah
+    if (_materiFileData && _materiFileData.length > 0) {
+      var berhasil = 0;
+      for (var i = 0; i < _materiFileData.length; i++) {
+        var fd = _materiFileData[i];
+        var fileTipe = 'dokumen';
+        if (fd.type.startsWith('video/'))      fileTipe = 'video';
+        else if (fd.type.startsWith('image/')) fileTipe = 'gambar';
+
+        // Judul: jika lebih dari 1 file, tambahkan nama file ke judul
+        var fileJudul = _materiFileData.length > 1
+          ? judul + ' — ' + fd.name
+          : judul;
+
+        try {
+          await sbFetch('/rest/v1/materi', {
+            method: 'POST',
+            body: JSON.stringify({
+              judul: fileJudul, url: null, tipe: fileTipe,
+              mapel: mapel || null, aktif: true,
+              file_name: fd.name, file_type: fd.type, file_data: fd.base64,
+              created_at: new Date().toISOString()
+            })
+          });
+          berhasil++;
+        } catch(e2) {
+          console.error('Gagal upload file:', fd.name, e2);
+        }
+      }
+      if (berhasil < _materiFileData.length) {
+        showToast('⚠️ ' + (berhasil) + '/' + _materiFileData.length + ' file berhasil diupload.', '#FEF3C7', '#92400E');
+      }
+    }
 
     document.getElementById('add-materi-modal').classList.remove('open');
     resetMateriModal();
     showToast('✅ Materi "' + judul + '" berhasil ditambahkan!', '#D1FAE5', '#065F46');
     // Refresh daftar materi
-    setTimeout(function(){ loadMateriGuru && loadMateriGuru(); }, 400);
+    setTimeout(function(){ loadMateriGuru(); }, 400);
   } catch(err) {
     console.error('simpanMateri error:', err);
     showToast('⚠️ Gagal simpan. Cek koneksi atau jalankan SQL materi.', '#FEE2E2', '#991B1B');
@@ -6411,45 +6856,153 @@ function openKumpulTugasModal(tugasJudul, tugasId) {
 
 
 // ── Load materi dari Supabase untuk siswa ──
+
+// ════════════════════════════════════════════════
+// MATERI GURU — Load & tampilkan daftar materi
+// ════════════════════════════════════════════════
+async function loadMateriGuru() {
+  var container = document.getElementById('tea-materi-list');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:16px;color:#64748B;font-size:12px;">⏳ Memuat materi...</div>';
+  try {
+    var data = await sbFetch('/rest/v1/materi?select=*&order=created_at.desc&aktif=eq.true');
+    if (!data || data.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;background:#F8FAFC;border-radius:12px;color:#64748B;font-size:13px;font-weight:600;"><div style="font-size:28px;margin-bottom:8px;">📚</div>Belum ada materi. Tambah via tombol Upload Materi.</div>';
+      return;
+    }
+    container.innerHTML = data.map(function(m) {
+      var icon = '📄';
+      if (m.tipe === 'video')  icon = '🎬';
+      else if (m.tipe === 'gambar') icon = '🖼️';
+      else if (m.file_type && m.file_type.includes('pdf')) icon = '📕';
+      else if (m.file_type && (m.file_type.includes('word') || (m.file_name && m.file_name.endsWith('.docx')))) icon = '📝';
+      else if (m.file_type && (m.file_type.includes('sheet') || (m.file_name && m.file_name.endsWith('.xlsx')))) icon = '📊';
+      var sumber = m.url ? '🔗 Link' : (m.file_name ? '📁 ' + m.file_name : '-');
+      var tgl = m.created_at ? new Date(m.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) : '-';
+      return '<div style="background:#fff;border-radius:12px;padding:12px 13px;display:flex;align-items:center;gap:11px;box-shadow:0 2px 8px rgba(0,0,0,.05);border:1.5px solid #E2E8F0;">'
+        + '<div style="width:40px;height:40px;border-radius:10px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">'+icon+'</div>'
+        + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:13px;font-weight:800;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+m.judul+'</div>'
+          + '<div style="font-size:10px;color:#64748B;font-weight:600;margin-top:2px;">'+sumber+' &nbsp;•&nbsp; '+tgl+(m.mapel?' &nbsp;•&nbsp; '+m.mapel:'')+'</div>'
+        + '</div>'
+        + '<button onclick="hapusMateri(\''+m.id+'\')" style="background:#FEE2E2;color:#991B1B;border:none;border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer;flex-shrink:0;">🗑️</button>'
+      + '</div>';
+    }).join('');
+    // Update stat
+    var statEl = document.getElementById('tea-stat-materi');
+    if (statEl) statEl.textContent = data.length;
+  } catch(e) {
+    console.error('loadMateriGuru error:', e);
+    container.innerHTML = '<div style="text-align:center;padding:16px;color:#991B1B;font-size:13px;">⚠️ Gagal memuat materi. Cek koneksi.</div>';
+  }
+}
+
+async function hapusMateri(id) {
+  if (!confirm('Hapus materi ini?')) return;
+  try {
+    await sbFetch('/rest/v1/materi?id=eq.' + id, { method: 'DELETE' });
+    showToast('🗑️ Materi dihapus!', '#FEF3C7', '#92400E');
+    loadMateriGuru();
+  } catch(e) { showToast('⚠️ Gagal hapus materi.', '#FEE2E2', '#991B1B'); }
+}
+
 async function loadMateriSiswa() {
   var kelas = '';
   try { kelas = localStorage.getItem('stuKelas') || ''; } catch(e){}
 
+  var vidContainer  = document.getElementById('stu-video-list');
+  var dokContainer  = document.getElementById('stu-dokumen-list');
+  if (vidContainer) vidContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#64748B;font-size:12px;">⏳ Memuat...</div>';
+  if (dokContainer) dokContainer.innerHTML = '';
+
   try {
-    var data = await sbFetch('/rest/v1/materi?select=*&order=created_at.desc&aktif=eq.true');
-    if (!data || data.length === 0) return;
-
-    // Separate video and dokumen
-    var videos = data.filter(function(m){ return m.tipe === 'video'; });
-    var dokumen = data.filter(function(m){ return m.tipe !== 'video'; });
-
-    // Render videos
-    var vidContainer = document.getElementById('stu-video-list');
-    if (vidContainer && videos.length > 0) {
-      var colors = ['linear-gradient(135deg,#DBEAFE,#BFDBFE)','linear-gradient(135deg,#D1FAE5,#A7F3D0)','linear-gradient(135deg,#FEF3C7,#FDE68A)','linear-gradient(135deg,#F3E8FF,#DDD6FE)'];
-      var icons  = ['🎬','📚','🔬','🌍','🗣️','📐'];
-      vidContainer.innerHTML = videos.map(function(v, i) {
-        return '<div class="vid-card" onclick="openVideoPlayer(\'' + v.url + '\',\'' + v.judul + '\')"> '
-          + '<div class="vid-thumb" style="background:'+colors[i%colors.length]+'">'+icons[i%icons.length]+'<div class="play-btn">▶</div></div>'
-          + '<div class="vid-info"><div class="vt">'+v.judul+'</div><div class="vd">▶ Tonton Video</div>'
-          + '<div class="v-prog-wrap"><div class="v-prog-fill" style="width:0%"></div></div></div>'
-          + '</div>';
-      }).join('');
+    var data = await sbFetch('/rest/v1/materi?select=id,judul,tipe,url,file_name,file_type,mapel,created_at&order=created_at.desc&aktif=eq.true');
+    if (!data || data.length === 0) {
+      if (vidContainer) vidContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#64748B;font-size:12px;">Belum ada materi video.</div>';
+      return;
     }
 
-    // Render dokumen
-    var dokContainer = document.getElementById('stu-dokumen-list');
-    if (dokContainer && dokumen.length > 0) {
-      dokContainer.innerHTML = dokumen.map(function(d) {
-        return '<div class="card card-pad" style="display:flex;align-items:center;gap:12px;">'
-          + '<div style="width:42px;height:42px;background:#DBEAFE;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">📄</div>'
-          + '<div style="flex:1;"><div style="font-size:13px;font-weight:800;color:var(--text);">'+d.judul+'</div><div style="font-size:11px;color:var(--muted);font-weight:600;">'+d.tipe.toUpperCase()+'</div></div>'
-          + (d.url ? '<a href="'+d.url+'" target="_blank" style="font-size:20px;text-decoration:none;">⬇️</a>' : '')
-          + '</div>';
-      }).join('');
+    var videos   = data.filter(function(m){ return m.tipe === 'video'; });
+    var nonVideo = data.filter(function(m){ return m.tipe !== 'video'; });
+
+    // ── Render VIDEO ──
+    if (vidContainer) {
+      if (videos.length === 0) {
+        vidContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#64748B;font-size:12px;">Belum ada materi video.</div>';
+      } else {
+        var colors = ['linear-gradient(135deg,#DBEAFE,#BFDBFE)','linear-gradient(135deg,#D1FAE5,#A7F3D0)','linear-gradient(135deg,#FEF3C7,#FDE68A)','linear-gradient(135deg,#F3E8FF,#DDD6FE)'];
+        var icons  = ['🎬','📚','🔬','🌍','🗣️','📐'];
+        vidContainer.innerHTML = videos.map(function(v, i) {
+          var safeUrl   = (v.url||'').replace(/'/g,"\'");
+          var safeJudul = (v.judul||'').replace(/'/g,"\'");
+          var clickAct  = v.url
+            ? 'openVideoPlayer(\'' + safeUrl + '\',\'' + safeJudul + '\')'
+            : 'showToast(\'⚠️ Link video tidak tersedia\',\'#FEE2E2\',\'#991B1B\')';
+          return '<div class="vid-card" onclick="'+clickAct+'">'
+            + '<div class="vid-thumb" style="background:'+colors[i%colors.length]+'">'+icons[i%icons.length]+'<div class="play-btn">▶</div></div>'
+            + '<div class="vid-info"><div class="vt">'+v.judul+'</div><div class="vd">▶ Tonton Video</div>'
+            + '<div class="v-prog-wrap"><div class="v-prog-fill" style="width:0%"></div></div></div>'
+            + '</div>';
+        }).join('');
+      }
     }
-  } catch(e) { console.log('loadMateriSiswa error:', e); }
+
+    // ── Render DOKUMEN / FILE / GAMBAR ──
+    if (dokContainer) {
+      if (nonVideo.length === 0) {
+        dokContainer.innerHTML = '';
+      } else {
+        dokContainer.innerHTML = nonVideo.map(function(d) {
+          var icon = '📄';
+          if (d.tipe === 'gambar') icon = '🖼️';
+          else if (d.file_type && d.file_type.includes('pdf')) icon = '📕';
+          else if (d.file_type && (d.file_type.includes('word') || (d.file_name && d.file_name.endsWith('.docx')))) icon = '📝';
+          else if (d.file_type && (d.file_type.includes('sheet') || (d.file_name && d.file_name.endsWith('.xlsx')))) icon = '📊';
+          else if (d.tipe === 'gdrive') icon = '☁️';
+
+          var actionBtn = '';
+          if (d.url) {
+            actionBtn = '<a href="'+d.url+'" target="_blank" style="padding:7px 12px;border-radius:9px;background:#DBEAFE;color:#1E40AF;font-size:11px;font-weight:800;text-decoration:none;white-space:nowrap;">🔗 Buka</a>';
+          } else if (d.file_name) {
+            actionBtn = '<button onclick="downloadMateriFile(\''+d.id+'\')" style="padding:7px 12px;border-radius:9px;background:#D1FAE5;color:#065F46;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;">⬇️ Unduh</button>';
+          }
+
+          return '<div class="card card-pad" style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">'
+            + '<div style="width:42px;height:42px;background:#EFF6FF;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">'+icon+'</div>'
+            + '<div style="flex:1;min-width:0;">'
+              + '<div style="font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+d.judul+'</div>'
+              + '<div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px;">'+(d.tipe||'dokumen').toUpperCase()+(d.mapel?' &nbsp;•&nbsp; '+d.mapel:'')+'</div>'
+            + '</div>'
+            + actionBtn
+            + '</div>';
+        }).join('');
+      }
+    }
+
+  } catch(e) {
+    console.error('loadMateriSiswa error:', e);
+    if (vidContainer) vidContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#991B1B;font-size:12px;">⚠️ Gagal memuat materi.</div>';
+  }
 }
+
+// Download file materi dari Supabase (base64)
+var _materiCache = {};
+async function downloadMateriFile(id) {
+  try {
+    var d = _materiCache[id];
+    if (!d) {
+      var res = await sbFetch('/rest/v1/materi?id=eq.'+id+'&select=file_data,file_name,file_type');
+      if (!res || !res[0] || !res[0].file_data) { showToast('⚠️ File tidak ditemukan.','#FEE2E2','#991B1B'); return; }
+      d = res[0];
+      _materiCache[id] = d;
+    }
+    var a = document.createElement('a');
+    a.href = d.file_data;
+    a.download = d.file_name || 'materi';
+    a.click();
+  } catch(e) { showToast('⚠️ Gagal unduh file.','#FEE2E2','#991B1B'); }
+}
+
 
 // ── Load stats siswa dari Supabase ──
 async function loadStatsSiswa() {
@@ -6528,8 +7081,7 @@ async function loadInfoTerbaru() {
   } catch(e) { console.log('loadInfoTerbaru error:', e); }
 }
 
-// ── Restore KOP on page load ──
-var _origRestoreSession = restoreSession;
+// ── Restore KOP on page load ── (definisi utama restoreSession)
 function restoreSession() {
   restoreKopAll();
   restoreKopSettings();
