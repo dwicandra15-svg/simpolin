@@ -990,13 +990,13 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
           <div class="upload-zone" onclick="triggerExcelUpload()" style="cursor:pointer;">
             <div class="uz-i">📂</div>
             <div class="uz-t">Klik atau Seret File CSV/Excel</div>
-            <div class="uz-s">Format: .csv | Maks. 500 siswa</div>
+            <div class="uz-s">Format: .xlsx / .csv | Maks. 500 siswa</div>
           </div>
 
           <div class="upload-steps">
-            <div class="up-step"><div class="up-num">1</div><div class="up-txt">Download template — isi NISN, Nama Siswa, Kelas</div></div>
-            <div class="up-step"><div class="up-num">2</div><div class="up-txt">Simpan sebagai CSV, lalu upload di sini</div></div>
-            <div class="up-step"><div class="up-num">3</div><div class="up-txt">Data tersimpan ke Supabase — siswa bisa login</div></div>
+            <div class="up-step"><div class="up-num">1</div><div class="up-txt">Download template Excel — isi NISN, Nama Siswa, Kelas</div></div>
+            <div class="up-step"><div class="up-num">2</div><div class="up-txt">Simpan file .xlsx lalu upload di sini</div></div>
+            <div class="up-step"><div class="up-num">3</div><div class="up-txt">Data otomatis tersimpan ke Supabase — siswa bisa login</div></div>
           </div>
 
           <div style="background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:10px;padding:9px 12px;margin-bottom:10px;">
@@ -1004,9 +1004,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
           </div>
 
           <div class="upload-btns">
-            <button class="btn-dl" onclick="downloadTemplateExcel()">⬇️ Template CSV</button>
-            <button class="btn-up" onclick="triggerExcelUpload()">📤 Upload & Proses</button>
+            <button class="btn-dl" onclick="downloadTemplateExcel()">⬇️ Template Excel (.xlsx)</button>
+            <button class="btn-up" onclick="triggerExcelUpload()">📤 Upload Excel / CSV</button>
           </div>
+          <div id="upload-result-box" style="display:none;margin-top:10px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;"></div>
         </div>
       </div>
       <div class="sec">
@@ -2648,7 +2649,7 @@ function openKopModal(target) {
 }
 function closeKopModal() { document.getElementById('kop-modal').classList.remove('open'); }
 function closeKopOutside(e) { if(e.target === document.getElementById('kop-modal')) closeKopModal(); }
-function saveKop() {
+async function saveKop() {
   // Ambil nilai dari modal
   var iconEl   = document.getElementById('kop-icon-input');
   var icon     = window._kopLogoImg ? null : (iconEl ? iconEl.textContent || '🏫' : '🏫');
@@ -2656,7 +2657,9 @@ function saveKop() {
   var sub      = document.getElementById('kop-subtitle-input').value.trim();
   var logoImg  = window._kopLogoImg || null;
 
-  // Simpan ke localStorage
+  var kopData = { icon: icon || '🏫', title: title, sub: sub, logoImg: logoImg || '' };
+
+  // Simpan ke localStorage (backup lokal)
   try {
     if (logoImg) localStorage.setItem('kopLogoImg', logoImg);
     else localStorage.removeItem('kopLogoImg');
@@ -2665,6 +2668,24 @@ function saveKop() {
     localStorage.setItem('kopSub',   sub);
   } catch(e){}
 
+  // Simpan ke Supabase agar persisten saat refresh
+  try {
+    var existing = await sbFetch('/rest/v1/app_settings?key=eq.kop_sekolah&select=key');
+    if (existing && existing.length > 0) {
+      await sbFetch('/rest/v1/app_settings?key=eq.kop_sekolah', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ value: JSON.stringify(kopData), updated_at: new Date().toISOString() })
+      });
+    } else {
+      await sbFetch('/rest/v1/app_settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ key: 'kop_sekolah', value: JSON.stringify(kopData) })
+      });
+    }
+  } catch(e) { console.warn('Gagal simpan kop ke Supabase:', e); }
+
   // Terapkan ke SEMUA KOP — stu & tea
   applyKopToAll(logoImg, icon, title, sub);
 
@@ -2672,7 +2693,7 @@ function saveKop() {
   window._kopLogoImg = null;
 
   closeKopModal();
-  showToast('✅ Kop sekolah tersinkron ke semua tampilan!', '#D1FAE5', '#065F46');
+  showToast('✅ Kop sekolah tersinkron & tersimpan permanen!', '#D1FAE5', '#065F46');
 }
 
 function applyKopToAll(logoImg, icon, title, sub) {
@@ -2715,7 +2736,29 @@ function applyKopToAll(logoImg, icon, title, sub) {
   });
 }
 
-function restoreKopAll() {
+async function restoreKopAll() {
+  // Coba load dari Supabase dulu (persisten antar device/refresh)
+  try {
+    var data = await sbFetch('/rest/v1/app_settings?key=eq.kop_sekolah&select=value');
+    if (data && data.length > 0) {
+      var kopData = JSON.parse(data[0].value);
+      var logoImg = kopData.logoImg || null;
+      var icon    = kopData.icon    || '🏫';
+      var title   = kopData.title   || '';
+      var sub     = kopData.sub     || '';
+      // Update localStorage juga agar modal pre-fill benar
+      try {
+        if (logoImg) localStorage.setItem('kopLogoImg', logoImg);
+        localStorage.setItem('kopIcon',  icon);
+        localStorage.setItem('kopTitle', title);
+        localStorage.setItem('kopSub',   sub);
+      } catch(e2){}
+      if (title) applyKopToAll(logoImg || null, icon, title, sub);
+      return;
+    }
+  } catch(e) { console.log('Supabase kop load failed, fallback localStorage', e); }
+
+  // Fallback ke localStorage
   try {
     var logoImg = localStorage.getItem('kopLogoImg') || null;
     var icon    = localStorage.getItem('kopIcon')  || '🏫';
@@ -2973,16 +3016,26 @@ const SUPABASE_URL  = 'https://ibejrweswmmjsevffpzm.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliZWpyd2Vzd21tanNldmZmcHptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyODk0OTMsImV4cCI6MjA4OTg2NTQ5M30.0Bs0UjHPufAg3Yt9O1Q1vj8kR8pHBwkGbIy_ebs861A';
 
 async function sbFetch(path, opts) {
-  var res = await fetch(SUPABASE_URL + path, Object.assign({
-    headers: {
-      'apikey': SUPABASE_ANON,
-      'Authorization': 'Bearer ' + SUPABASE_ANON,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
-    }
-  }, opts));
-  if (!res.ok) return null;
-  return res.json();
+  opts = opts || {};
+  // Merge headers properly — caller headers override defaults
+  var defaultHeaders = {
+    'apikey': SUPABASE_ANON,
+    'Authorization': 'Bearer ' + SUPABASE_ANON,
+    'Content-Type': 'application/json',
+    'Prefer': 'return=representation'
+  };
+  var callerHeaders = (opts.headers) || {};
+  var mergedHeaders = Object.assign({}, defaultHeaders, callerHeaders);
+  var fetchOpts = Object.assign({}, opts, { headers: mergedHeaders });
+  var res = await fetch(SUPABASE_URL + path, fetchOpts);
+  if (!res.ok) {
+    var errText = '';
+    try { errText = await res.text(); } catch(e2) {}
+    throw new Error('Supabase ' + res.status + ': ' + errText.substring(0, 200));
+  }
+  var text = await res.text();
+  if (!text || text.trim() === '') return [];
+  try { return JSON.parse(text); } catch(e) { return []; }
 }
 
 // ════════════════════════════════════════════════
@@ -6503,35 +6556,66 @@ function closeEditIntegrasiModal(e) {
 // TEMPLATE EXCEL — Download via pure JS (no library needed)
 // ══════════════════════════════════════════════════════════
 function downloadTemplateExcel() {
-  // Template SIMPOLIN — hanya 3 kolom wajib
+  _ensureSheetJS(function() {
+    var wb = XLSX.utils.book_new();
+    var data = [
+      ['NISN', 'NAMA_SISWA', 'KELAS'],
+      ['3012345678', 'Ahmad Fauzan', '9A'],
+      ['3087654321', 'Siti Rahayu', '9B'],
+      ['3056781234', 'Budi Pratama', '9A'],
+    ];
+    var ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [{wch:18},{wch:30},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Data Siswa');
+    XLSX.writeFile(wb, 'template_siswa_simpolin.xlsx');
+    showToast('✅ Template Excel berhasil diunduh!', '#D1FAE5', '#065F46');
+  });
+}
+
+function _doDownloadExcel() {
+  try {
+    if (typeof XLSX === 'undefined') { _doDownloadCSV(); return; }
+    var wb = XLSX.utils.book_new();
+    // Data rows: header + contoh + 20 empty rows
+    var wsData = [
+      ['NISN', 'NAMA_SISWA', 'KELAS'],
+      ['3012345678', 'Ahmad Fauzan',   '9A'],
+      ['3087654321', 'Siti Rahayu',    '9B'],
+      ['3056781234', 'Budi Pratama',   '9A'],
+      ['3098765432', 'Dewi Lestari',   '9C'],
+      ['3011223344', 'Rizky Ramadan',  '8A'],
+    ];
+    // Add 15 empty rows for input
+    for (var r = 0; r < 15; r++) wsData.push(['', '', '']);
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    // Column widths
+    ws['!cols'] = [{wch:14}, {wch:28}, {wch:8}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Data Siswa');
+    XLSX.writeFile(wb, 'Template_Siswa_SIMPOLIN.xlsx');
+    showToast('✅ Template Excel (.xlsx) berhasil didownload!', '#D1FAE5', '#065F46');
+  } catch(e) {
+    console.warn('SheetJS error:', e);
+    _doDownloadCSV();
+  }
+}
+
+function _doDownloadCSV() {
+  // Fallback CSV
   var bom = '\uFEFF';
-  var header = 'NISN,NAMA_SISWA,KELAS';
-  var contoh = [
+  var rows = [
+    'NISN,NAMA_SISWA,KELAS',
     '3012345678,Ahmad Fauzan,9A',
     '3087654321,Siti Rahayu,9B',
     '3056781234,Budi Pratama,9A',
     '3098765432,Dewi Lestari,9C',
     '3011223344,Rizky Ramadan,8A',
   ];
-  var petunjuk = [
-    '',
-    '--- PETUNJUK PENGISIAN ---',
-    'NISN       : 10 digit angka (wajib dan unik)',
-    'NAMA_SISWA : Nama lengkap siswa',
-    'KELAS      : 7A / 7B / 7C / 8A / 8B / 8C / 9A / 9B / 9C',
-    '',
-    'Catatan: Password login siswa = NISN siswa (otomatis)',
-    'Hapus baris contoh dan petunjuk ini sebelum upload',
-  ];
-  var csvContent = bom + [header].concat(contoh).concat(petunjuk).join('\n');
-  var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  var blob = new Blob([bom + rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
-  a.href = url;
-  a.download = 'Template_Siswa_SIMPOLIN.csv';
-  a.click();
+  a.href = url; a.download = 'Template_Siswa_SIMPOLIN.csv'; a.click();
   URL.revokeObjectURL(url);
-  showToast('\u2705 Template didownload! Isi kolom NISN, Nama Siswa, Kelas lalu upload.', '#D1FAE5', '#065F46');
+  showToast('✅ Template CSV berhasil didownload!', '#D1FAE5', '#065F46');
 }
 
 // ══════════════════════════════════════════════════════════
@@ -6544,76 +6628,178 @@ function triggerExcelUpload() {
   input.onchange = function(e) {
     var file = e.target.files[0];
     if (!file) return;
-    var reader = new FileReader();
-    reader.onload = function(ev) {
-      processExcelData(ev.target.result, file.name);
-    };
-    reader.readAsText(file, 'UTF-8');
+    var ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'xlsx' || ext === 'xls') {
+      // Binary read XLSX with SheetJS - parse directly
+      _ensureSheetJS(function() {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+          try {
+            var wb      = XLSX.read(ev.target.result, { type: 'array' });
+            var ws      = wb.Sheets[wb.SheetNames[0]];
+            var jsonRows = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+            if (!jsonRows || jsonRows.length === 0) {
+              showToast('⚠️ File Excel kosong!', '#FEE2E2', '#991B1B');
+              return;
+            }
+            var siswaList = [];
+            jsonRows.forEach(function(row) {
+              var nisn  = String(row['NISN'] || row['nisn'] || row['Nisn'] || '').trim().replace(/\.0$/,'').replace(/,/g,'');
+              var nama  = String(row['NAMA_SISWA']||row['NAMA SISWA']||row['NAMA_LENGKAP']||row['NAMA']||row['Nama']||'').trim();
+              var kelas = String(row['KELAS']||row['Kelas']||row['kelas']||'').trim();
+              if (!nisn || !nama) return;
+              while (nisn.length < 10) nisn = '0' + nisn;
+              siswaList.push({ nisn: nisn, nama: nama, kelas: kelas, aktif: true });
+            });
+            if (siswaList.length === 0) {
+              showToast('⚠️ Tidak ada data valid. Kolom wajib: NISN, NAMA_SISWA, KELAS', '#FEE2E2', '#991B1B');
+              return;
+            }
+            uploadSiswaBatch(siswaList, file.name);
+          } catch(err) {
+            showToast('⚠️ Gagal baca Excel: ' + err.message, '#FEE2E2', '#991B1B');
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    } else {
+      // CSV: text read
+      var reader = new FileReader();
+      reader.onload = function(ev) { processExcelData(ev.target.result, file.name); };
+      reader.readAsText(file, 'UTF-8');
+    }
   };
+  document.body.appendChild(input);
   input.click();
+  document.body.removeChild(input);
 }
 
-async function processExcelData(content, filename) {
-  showToast('\u23f3 Memproses data siswa...', '#DBEAFE', '#1E40AF');
-  try {
-    // Parse CSV — support BOM
-    var raw = content.replace(/^\uFEFF/, '').replace(/\r/g, '');
-    var lines = raw.split('\n').filter(function(l) {
-      return l.trim() && !l.startsWith('---') && !l.startsWith('Catatan') && !l.startsWith('Hapus') && l.split(',').length >= 2;
-    });
-    if (lines.length < 2) { showToast('\u26a0\ufe0f File kosong atau format salah!', '#FEE2E2', '#991B1B'); return; }
+function _ensureSheetJS(callback) {
+  if (typeof XLSX !== 'undefined') { callback(); return; }
+  var script = document.getElementById('sheetjs-cdn');
+  if (!script) {
+    script = document.createElement('script');
+    script.id = 'sheetjs-cdn';
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    document.head.appendChild(script);
+  }
+  script.onload = callback;
+  script.onerror = function() {
+    showToast('\u26a0\ufe0f Gagal load SheetJS. Gunakan file CSV.', '#FEE2E2', '#991B1B');
+  };
+}
 
-    var headers = lines[0].split(',').map(function(h){ return h.trim().toUpperCase().replace(/[^A-Z_]/g,''); });
+async function processExcelData(csvContent, filename) {
+  showToast('\u23f3 Memproses file ' + filename + '...', '#DBEAFE', '#1E40AF');
+
+  try {
+    // Strip BOM & normalize line endings
+    var raw = csvContent.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Split lines, skip empty & petunjuk lines
+    var lines = raw.split('\n').filter(function(l) {
+      var t = l.trim();
+      return t && !t.startsWith('---') && !t.startsWith('Catatan') && !t.startsWith('Hapus') && t.indexOf(',') >= 0;
+    });
+
+    if (lines.length < 2) {
+      showToast('\u26a0\ufe0f File kosong atau tidak ada data! Pastikan format benar (NISN,NAMA_SISWA,KELAS).', '#FEE2E2', '#991B1B');
+      return;
+    }
+
+    // Parse headers — support: NISN, NAMA_SISWA, NAMA_LENGKAP, NAMA, KELAS
+    var headers = lines[0].split(',').map(function(h) {
+      return h.trim().toUpperCase().replace(/[^A-Z_]/g, '');
+    });
+    console.log('Headers detected:', headers);
+
     var nisnIdx  = headers.indexOf('NISN');
-    // Support both NAMA_SISWA (new) and NAMA_LENGKAP (old)
     var namaIdx  = headers.indexOf('NAMA_SISWA');
     if (namaIdx < 0) namaIdx = headers.indexOf('NAMA_LENGKAP');
     if (namaIdx < 0) namaIdx = headers.indexOf('NAMA');
     var kelasIdx = headers.indexOf('KELAS');
 
-    if (nisnIdx < 0 || namaIdx < 0 || kelasIdx < 0) {
-      showToast('\u26a0\ufe0f Kolom NISN / NAMA_SISWA / KELAS tidak ditemukan! Gunakan template resmi.', '#FEE2E2', '#991B1B');
+    if (nisnIdx < 0) {
+      showToast('\u26a0\ufe0f Kolom NISN tidak ditemukan! Header: ' + headers.join(', '), '#FEE2E2', '#991B1B');
+      return;
+    }
+    if (namaIdx < 0) {
+      showToast('\u26a0\ufe0f Kolom NAMA_SISWA tidak ditemukan! Header: ' + headers.join(', '), '#FEE2E2', '#991B1B');
+      return;
+    }
+    if (kelasIdx < 0) {
+      showToast('\u26a0\ufe0f Kolom KELAS tidak ditemukan! Header: ' + headers.join(', '), '#FEE2E2', '#991B1B');
       return;
     }
 
+    // Parse rows
     var siswaList = [];
+    var skipped   = 0;
     for (var i = 1; i < lines.length; i++) {
-      var cols = lines[i].split(',');
+      var cols  = lines[i].split(',');
       var nisn  = (cols[nisnIdx]  || '').trim().replace(/\D/g, '');
       var nama  = (cols[namaIdx]  || '').trim();
       var kelas = (cols[kelasIdx] || '').trim().toUpperCase();
-      if (!nisn || !nama || nisn.length < 6) continue;
-      // Password default = NISN
+      // Skip contoh rows and invalid
+      if (!nisn || !nama || nisn.length < 6 || nama === 'NAMA_SISWA' || nama === 'NAMA_LENGKAP') {
+        skipped++;
+        continue;
+      }
       siswaList.push({ nisn: nisn, nama: nama, kelas: kelas, password: nisn });
     }
 
-    if (siswaList.length === 0) { showToast('\u26a0\ufe0f Tidak ada data valid! Pastikan format benar.', '#FEE2E2', '#991B1B'); return; }
+    if (siswaList.length === 0) {
+      showToast('\u26a0\ufe0f Tidak ada data valid! (Dilewati: ' + skipped + ' baris). Hapus baris contoh dan petunjuk.', '#FEE2E2', '#991B1B');
+      return;
+    }
 
-    // Preview sebelum upload
     showToast('\u23f3 Mengupload ' + siswaList.length + ' siswa ke Supabase...', '#DBEAFE', '#1E40AF');
+    console.log('Uploading', siswaList.length, 'students:', siswaList);
 
-    // Upload ke Supabase — upsert by nisn
+    // Upload ke Supabase — upsert batch
     var berhasil = 0, gagal = 0;
     for (var j = 0; j < siswaList.length; j++) {
       try {
-        await sbFetch('/rest/v1/siswa', {
+        var result = await sbFetch('/rest/v1/siswa', {
           method: 'POST',
-          headers: { 'Prefer': 'resolution=merge-duplicates' },
+          headers: {
+            'apikey': SUPABASE_ANON,
+            'Authorization': 'Bearer ' + SUPABASE_ANON,
+            'Content-Type': 'application/json',
+            'Prefer': 'resolution=merge-duplicates,return=representation'
+          },
           body: JSON.stringify(siswaList[j])
         });
         berhasil++;
-      } catch(e2) { gagal++; console.warn('Gagal upload siswa:', siswaList[j].nisn, e2); }
+        console.log('Upload OK:', siswaList[j].nisn, result);
+      } catch(e2) {
+        gagal++;
+        console.error('Upload GAGAL:', siswaList[j].nisn, e2.message);
+      }
     }
 
+    // Show result
     var msg = '\u2705 ' + berhasil + ' siswa berhasil diimport!';
-    if (gagal > 0) msg += ' (' + gagal + ' gagal — mungkin duplikat)';
-    showToast(msg, '#D1FAE5', '#065F46');
+    if (gagal > 0) msg += ' | \u26a0\ufe0f ' + gagal + ' gagal (lihat console)';
+    showToast(msg, berhasil > 0 ? '#D1FAE5' : '#FEE2E2', berhasil > 0 ? '#065F46' : '#991B1B');
 
-    // Update UI tabel siswa
-    setTimeout(function(){ loadSiswaNyata(); updateTeacherStats(); }, 600);
+    // Show progress info in upload card
+    var uzInfo = document.querySelector('.uz-t');
+    if (uzInfo) uzInfo.textContent = '\u2705 ' + berhasil + ' siswa berhasil diimport!';
+    var uzSub = document.querySelector('.uz-s');
+    if (uzSub) uzSub.textContent = gagal > 0 ? '\u26a0\ufe0f ' + gagal + ' data gagal — cek format NISN' : 'Upload selesai!';
+
+    // Reload student table
+    if (berhasil > 0) {
+      setTimeout(function() {
+        loadSiswaNyata();
+        updateTeacherStats();
+      }, 800);
+    }
 
   } catch(err) {
-    showToast('\u26a0\ufe0f Gagal proses file: ' + (err.message || err), '#FEE2E2', '#991B1B');
+    console.error('processExcelData error:', err);
+    showToast('\u26a0\ufe0f Gagal proses: ' + (err.message || err), '#FEE2E2', '#991B1B');
   }
 }
 
@@ -6647,35 +6833,98 @@ async function loadIntegrasi() {
 }
 
 async function saveIntegrasi() {
-  if (_integrasiSaving) return; // prevent double-save
+  if (_integrasiSaving) return false;
   _integrasiSaving = true;
   var val = JSON.stringify(integrasiList);
-  // Simpan ke localStorage (instant, offline backup)
+  // Always backup localStorage first
   try { localStorage.setItem('integrasiLinks_v2', val); } catch(e) {}
-  // Simpan ke Supabase — UPSERT (insert or update)
   var saved = false;
   try {
+    // POST with upsert (merge-duplicates)
     await sbFetch('/rest/v1/app_settings', {
       method: 'POST',
-      headers: { 'Prefer': 'resolution=merge-duplicates' },
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
       body: JSON.stringify({ key: INTEGRASI_KEY, value: val })
     });
     saved = true;
+    console.log('saveIntegrasi: Supabase upsert OK');
   } catch(e) {
-    // Coba PATCH jika POST gagal
+    console.warn('saveIntegrasi POST gagal:', e.message);
     try {
       await sbFetch('/rest/v1/app_settings?key=eq.' + INTEGRASI_KEY, {
         method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ value: val })
       });
       saved = true;
+      console.log('saveIntegrasi: Supabase PATCH OK');
     } catch(e2) {
-      console.warn('saveIntegrasi Supabase gagal:', e2.message);
-      showToast('\u26a0\ufe0f Gagal sync. Cek koneksi internet.', '#FEF3C7', '#92400E');
+      console.error('saveIntegrasi gagal total:', e2.message);
     }
   }
   _integrasiSaving = false;
   return saved;
+}
+
+
+// ── Upload siswa batch ke Supabase ──
+async function uploadSiswaBatch(siswaList, filename) {
+  var total = siswaList.length;
+  showToast('⏳ Mengunggah ' + total + ' siswa...', '#DBEAFE', '#1E40AF');
+
+  var berhasil = 0;
+  var gagal = 0;
+
+  for (var i = 0; i < siswaList.length; i++) {
+    var s = siswaList[i];
+    try {
+      // Buat payload tanpa tanggal_lahir agar tidak konflik NOT NULL constraint
+      var payload = {
+        nisn: s.nisn,
+        nama: s.nama,
+        kelas: s.kelas || '',
+        aktif: true
+      };
+      // Tambahkan tanggal_lahir hanya jika ada di file Excel
+      if (s.tanggal_lahir) payload.tanggal_lahir = s.tanggal_lahir;
+
+      var res = await fetch(SUPABASE_URL + '/rest/v1/siswa', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        var errText = await res.text();
+        throw new Error('Supabase ' + res.status + ': ' + errText);
+      }
+      berhasil++;
+    } catch(e) {
+      gagal++;
+      console.warn('Gagal upload siswa:', s.nisn, e);
+    }
+  }
+
+  if (berhasil > 0) {
+    showToast('✅ ' + berhasil + ' siswa berhasil diimpor' + (gagal > 0 ? ', ' + gagal + ' gagal' : '') + '!', '#D1FAE5', '#065F46');
+    // Refresh daftar siswa
+    setTimeout(function() { loadSiswaNyata(); updateTeacherStats(); }, 800);
+  } else {
+    showToast('⚠️ Semua data gagal diimpor. Cek format NISN (10 digit).', '#FEE2E2', '#991B1B');
+  }
 }
 
 </script>
