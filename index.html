@@ -1256,7 +1256,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 
         <div class="rpt-card">
           <table>
-            <tr><th style="background:linear-gradient(90deg,#065F46,#059669)" colspan="5">Rekap Nilai Siswa — Matematika</th></tr>
+            <tr><th style="background:linear-gradient(90deg,#065F46,#059669)" colspan="5" id="laporan-rekap-title">Rekap Nilai Siswa — <span id="laporan-rekap-mapel">-</span></th></tr>
             <tr style="background:#F8FAFC"><td style="font-size:10px;font-weight:700;color:var(--muted)">NAMA</td><td style="font-size:10px;font-weight:700;color:var(--muted)">KELAS</td><td style="font-size:10px;font-weight:700;color:var(--muted)">TUGAS</td><td style="font-size:10px;font-weight:700;color:var(--muted)">UH</td><td style="font-size:10px;font-weight:700;color:var(--muted)">GRADE</td></tr>
             <tr><td colspan="5" style="text-align:center;padding:16px;color:#64748B;font-size:12px;" id="laporan-empty-row">Belum ada data nilai. Pilih kelas dan filter dulu.</td></tr>
             <tr style="background:#F0FDF4"><td colspan="2"><strong>Rata-rata Kelas</strong></td><td style="font-size:11px"><strong style="color:var(--g)">87.5</strong></td><td style="font-size:11px"><strong style="color:var(--g)">86.0</strong></td><td><span class="ng ng-b" style="font-size:10px">B+</span></td></tr>
@@ -2035,9 +2035,25 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
     <div class="s-field">
       <label>MATA PELAJARAN</label>
       <select id="materi-mapel" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+        <option value="">-- Semua Mapel --</option>
         <option>Matematika</option><option>IPA</option><option>IPS</option>
         <option>Bhs. Indonesia</option><option>Bhs. Inggris</option><option>PKN</option>
+        <option>Penjaskes</option><option>Seni Budaya</option><option>TIK</option><option>Agama</option>
       </select>
+    </div>
+    <div class="s-field">
+      <label>PERUNTUKAN KELAS <span style="font-size:10px;color:var(--muted);font-weight:600;">(kosongkan = semua kelas)</span></label>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:4px;" id="materi-kelas-checkboxes">
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="7A" class="materi-kelas-cb"> 7A</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="7B" class="materi-kelas-cb"> 7B</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="7C" class="materi-kelas-cb"> 7C</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="8A" class="materi-kelas-cb"> 8A</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="8B" class="materi-kelas-cb"> 8B</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="8C" class="materi-kelas-cb"> 8C</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="9A" class="materi-kelas-cb"> 9A</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="9B" class="materi-kelas-cb"> 9B</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:6px 8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;"><input type="checkbox" value="9C" class="materi-kelas-cb"> 9C</label>
+      </div>
     </div>
     <div style="display:flex;gap:8px;margin-top:4px;">
       <button class="modal-cancel" onclick="closeAddMateriModal()">Batal</button>
@@ -2046,6 +2062,164 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
   </div>
 </div>
 
+<!-- ══════════════════════════════
+     MODAL EDIT MATERI
+══════════════════════════════ -->
+<div class="logo-modal-overlay" id="edit-materi-modal" onclick="closeEditMateriModal(event)">
+  <div class="logo-modal-box" style="max-height:90vh;overflow-y:auto;">
+    <h3>✏️ Edit Materi</h3>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:14px;">Ubah informasi materi yang sudah ada</p>
+    <input type="hidden" id="edit-materi-id">
+    <div class="s-field">
+      <label>JUDUL MATERI *</label>
+      <input type="text" id="edit-materi-judul" placeholder="Judul materi">
+    </div>
+    <div class="s-field">
+      <label>LINK <span style="font-size:10px;color:var(--muted);font-weight:600;">(opsional — kosongkan jika tidak ingin ubah)</span></label>
+      <input type="url" id="edit-materi-link" placeholder="https://youtu.be/... atau https://drive.google.com/...">
+    </div>
+    <div class="s-field">
+      <label>MATA PELAJARAN</label>
+      <select id="edit-materi-mapel" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+        <option value="">-- Pilih --</option>
+        <option>Matematika</option><option>IPA</option><option>IPS</option>
+        <option>Bhs. Indonesia</option><option>Bhs. Inggris</option><option>PKN</option>
+        <option>Penjaskes</option><option>Seni Budaya</option><option>TIK</option><option>Agama</option>
+      </select>
+    </div>
+    <div class="s-field">
+      <label>KELAS (opsional)</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="edit-materi-kelas-wrap">
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="7A" class="edit-materi-kelas-cb"> 7A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="7B" class="edit-materi-kelas-cb"> 7B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="8A" class="edit-materi-kelas-cb"> 8A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="8B" class="edit-materi-kelas-cb"> 8B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9A" class="edit-materi-kelas-cb"> 9A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9B" class="edit-materi-kelas-cb"> 9B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9C" class="edit-materi-kelas-cb"> 9C</label>
+      </div>
+    </div>
+    <div id="edit-materi-status" style="display:none;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="modal-cancel" onclick="closeEditMateriModal()">Batal</button>
+      <button class="modal-save" onclick="simpanEditMateri()">💾 Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL EDIT TUGAS
+══════════════════════════════ -->
+<div class="logo-modal-overlay" id="edit-tugas-modal" onclick="closeEditTugasModal(event)">
+  <div class="logo-modal-box" style="max-height:88vh;overflow-y:auto;">
+    <h3>✏️ Edit Tugas</h3>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:14px;">Ubah detail tugas yang sudah dibuat</p>
+    <input type="hidden" id="edit-tugas-id">
+    <div class="s-field">
+      <label>JUDUL TUGAS *</label>
+      <input type="text" id="edit-tugas-judul" placeholder="Judul tugas">
+    </div>
+    <div class="s-field">
+      <label>MATA PELAJARAN *</label>
+      <select id="edit-tugas-mapel" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+        <option value="">-- Pilih --</option>
+        <option>Matematika</option><option>IPA</option><option>IPS</option>
+        <option>Bhs. Indonesia</option><option>Bhs. Inggris</option><option>PKN</option>
+        <option>Penjaskes</option><option>Seni Budaya</option><option>TIK</option><option>Agama</option>
+      </select>
+    </div>
+    <div class="s-field">
+      <label>KELAS *</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="7A" class="edit-tugas-kelas-cb"> 7A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="7B" class="edit-tugas-kelas-cb"> 7B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="8A" class="edit-tugas-kelas-cb"> 8A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="8B" class="edit-tugas-kelas-cb"> 8B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9A" class="edit-tugas-kelas-cb"> 9A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9B" class="edit-tugas-kelas-cb"> 9B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9C" class="edit-tugas-kelas-cb"> 9C</label>
+      </div>
+    </div>
+    <div class="s-field">
+      <label>DESKRIPSI TUGAS</label>
+      <textarea id="edit-tugas-deskripsi" rows="3" placeholder="Deskripsi tugas..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;resize:vertical;"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="s-field" style="margin:0;">
+        <label>DEADLINE *</label>
+        <input type="date" id="edit-tugas-deadline" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+      </div>
+      <div class="s-field" style="margin:0;">
+        <label>BOBOT NILAI</label>
+        <input type="number" id="edit-tugas-bobot" value="100" min="1" max="100" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+      </div>
+    </div>
+    <div id="edit-tugas-status" style="display:none;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;margin-top:8px;"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="modal-cancel" onclick="closeEditTugasModal()">Batal</button>
+      <button class="modal-save" onclick="simpanEditTugas()">💾 Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     MODAL EDIT UJIAN
+══════════════════════════════ -->
+<div class="logo-modal-overlay" id="edit-ujian-modal" onclick="closeEditUjianModal(event)">
+  <div class="logo-modal-box" style="max-height:88vh;overflow-y:auto;">
+    <h3>✏️ Edit Ujian</h3>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:14px;">Ubah detail ujian yang sudah dibuat</p>
+    <input type="hidden" id="edit-ujian-id">
+    <div class="s-field">
+      <label>JUDUL UJIAN *</label>
+      <input type="text" id="edit-ujian-judul" placeholder="Judul ujian">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="s-field" style="margin:0;">
+        <label>MATA PELAJARAN *</label>
+        <select id="edit-ujian-mapel" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;color:var(--text);outline:none;">
+          <option value="">-- Pilih --</option>
+          <option>Matematika</option><option>IPA</option><option>IPS</option>
+          <option>Bhs. Indonesia</option><option>Bhs. Inggris</option><option>PKN</option>
+          <option>Penjaskes</option><option>Seni Budaya</option><option>TIK</option><option>Agama</option>
+        </select>
+      </div>
+      <div class="s-field" style="margin:0;">
+        <label>DURASI (menit)</label>
+        <input type="number" id="edit-ujian-durasi" value="60" min="10" max="180" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;">
+      </div>
+    </div>
+    <div class="s-field">
+      <label>KELAS *</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="7A" class="edit-ujian-kelas-cb"> 7A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="7B" class="edit-ujian-kelas-cb"> 7B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="8A" class="edit-ujian-kelas-cb"> 8A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="8B" class="edit-ujian-kelas-cb"> 8B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9A" class="edit-ujian-kelas-cb"> 9A</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9B" class="edit-ujian-kelas-cb"> 9B</label>
+        <label style="display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;cursor:pointer;"><input type="checkbox" value="9C" class="edit-ujian-kelas-cb"> 9C</label>
+      </div>
+    </div>
+    <div class="s-field">
+      <label>WAKTU MULAI *</label>
+      <input type="datetime-local" id="edit-ujian-mulai" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;color:var(--text);outline:none;">
+    </div>
+    <div class="s-field">
+      <label>WAKTU SELESAI *</label>
+      <input type="datetime-local" id="edit-ujian-selesai" style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:12px;font-weight:600;color:var(--text);outline:none;">
+    </div>
+    <div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:10px;padding:10px 12px;margin-bottom:4px;">
+      <div style="font-size:11px;font-weight:800;color:#92400E;">⚠️ Catatan</div>
+      <div style="font-size:11px;color:#B45309;margin-top:2px;">Soal yang dipilih tidak dapat diubah via edit. Hapus dan buat ulang ujian jika ingin ganti soal.</div>
+    </div>
+    <div id="edit-ujian-status" style="display:none;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700;margin-top:8px;"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="modal-cancel" onclick="closeEditUjianModal()">Batal</button>
+      <button class="modal-save" onclick="simpanEditUjian()">💾 Simpan Perubahan</button>
+    </div>
+  </div>
+</div>
 <div class="logo-modal-overlay" id="tambah-soal-modal" onclick="closeTambahSoalModal(event)">
   <div class="logo-modal-box" style="max-height:92vh;overflow-y:auto;">
     <h3>📝 Tambah / Edit Soal</h3>
@@ -2665,6 +2839,9 @@ function loginGuruSuccess(nama, nip, pass, guruObj) {
   var lMapel = document.getElementById('laporan-guru-mapel');
   if (lNama)  lNama.textContent  = nama;
   if (lMapel) lMapel.textContent = currentGuru.mapel || '-';
+  // Update rekap title
+  var lRekapMapel = document.getElementById('laporan-rekap-mapel');
+  if (lRekapMapel) lRekapMapel.textContent = currentGuru.mapel || '-';
 
   document.querySelector('#pg-teacher .tb-greeting p').textContent = getGreeting() + ' 👋';
   // Log aktivitas
@@ -2774,6 +2951,8 @@ async function saveSettings() {
   // 2. Update laporan nama & mapel
   var lNama = document.getElementById('laporan-guru-nama');
   var lMapel = document.getElementById('laporan-guru-mapel');
+  var lRekapMapel2 = document.getElementById('laporan-rekap-mapel');
+  if (lRekapMapel2) lRekapMapel2.textContent = mapel || '-';
   if (lNama)  lNama.textContent  = nama;
   if (lMapel) lMapel.textContent = mapel || '-';
 
@@ -2903,6 +3082,14 @@ function switchTeaTab(name, el) {
   if (name === 'beranda') loadMateriGuru();
   if (name === 'tugas') { loadTugasGuru(); loadBankSoalFromSupabase(); }
   if (name === 'siswa') loadSiswaNyata();
+  if (name === 'laporan') {
+    // Update rekap mapel sesuai guru saat tab laporan dibuka
+    var gm = (currentGuru && currentGuru.mapel) || localStorage.getItem('guruMapel') || '-';
+    var rEl = document.getElementById('laporan-rekap-mapel');
+    if (rEl) rEl.textContent = gm;
+    var lMapelEl = document.getElementById('laporan-guru-mapel');
+    if (lMapelEl) lMapelEl.textContent = gm;
+  }
 }
 
 // Settings
@@ -5140,6 +5327,22 @@ async function simpanUjian() {
 // ── MODAL TAMBAH MATERI ──
 function openAddMateriModal() {
   resetMateriModal();
+  // Pre-set mapel sesuai mapel guru yang login
+  var guruMapel = (currentGuru && currentGuru.mapel) || localStorage.getItem('guruMapel') || '';
+  var mapelEl = document.getElementById('materi-mapel');
+  if (mapelEl && guruMapel && guruMapel !== 'Admin') {
+    for (var i = 0; i < mapelEl.options.length; i++) {
+      if (mapelEl.options[i].text === guruMapel || mapelEl.options[i].value === guruMapel) {
+        mapelEl.selectedIndex = i; break;
+      }
+    }
+  }
+  // Pre-centang kelas yang diampu guru
+  if (currentGuru && currentGuru.kelas && currentGuru.kelas.length > 0) {
+    document.querySelectorAll('.materi-kelas-cb').forEach(function(cb) {
+      cb.checked = currentGuru.kelas.indexOf(cb.value) !== -1;
+    });
+  }
   document.getElementById('add-materi-modal').classList.add('open');
 }
 function closeAddMateriModal(e) {
@@ -5258,6 +5461,19 @@ document.addEventListener('DOMContentLoaded', function() {
 function resetMateriModal() {
   document.getElementById('materi-judul').value = '';
   document.getElementById('materi-link').value  = '';
+  // Reset mapel ke default guru saat ini
+  var guruMapel = (currentGuru && currentGuru.mapel) || localStorage.getItem('guruMapel') || '';
+  var mapelEl = document.getElementById('materi-mapel');
+  if (mapelEl && guruMapel) {
+    // Set ke mapel guru jika ada opsi yang cocok
+    for (var i = 0; i < mapelEl.options.length; i++) {
+      if (mapelEl.options[i].value === guruMapel || mapelEl.options[i].text === guruMapel) {
+        mapelEl.selectedIndex = i; break;
+      }
+    }
+  }
+  // Reset semua checkbox kelas
+  document.querySelectorAll('.materi-kelas-cb').forEach(function(cb){ cb.checked = false; });
   clearMateriFile();
   _materiFileData = [];
 }
@@ -5266,6 +5482,9 @@ async function simpanMateri() {
   var judul = document.getElementById('materi-judul').value.trim();
   var link  = document.getElementById('materi-link').value.trim();
   var mapel = document.getElementById('materi-mapel').value;
+  // Ambil kelas yang dipilih
+  var kelasChecked = Array.from(document.querySelectorAll('.materi-kelas-cb:checked')).map(function(c){ return c.value; });
+  var kelasTarget = kelasChecked.length > 0 ? kelasChecked : []; // kosong = semua kelas
 
   // Validasi: judul wajib, link ATAU file harus ada salah satu
   if (!judul) { showToast('⚠️ Judul materi wajib diisi!', '#FEE2E2', '#991B1B'); return; }
@@ -5287,8 +5506,8 @@ async function simpanMateri() {
         method: 'POST',
         body: JSON.stringify({
           judul: judul, url: link, tipe: tipe,
-          mapel: mapel || null, aktif: true,
-          created_at: new Date().toISOString()
+          mapel: mapel || null, kelas: kelasTarget,
+          aktif: true, created_at: new Date().toISOString()
         })
       });
     }
@@ -5312,8 +5531,8 @@ async function simpanMateri() {
             method: 'POST',
             body: JSON.stringify({
               judul: fileJudul, url: null, tipe: fileTipe,
-              mapel: mapel || null, aktif: true,
-              file_name: fd.name, file_type: fd.type, file_data: fd.base64,
+              mapel: mapel || null, kelas: kelasTarget,
+              aktif: true, file_name: fd.name, file_type: fd.type, file_data: fd.base64,
               created_at: new Date().toISOString()
             })
           });
@@ -6827,6 +7046,7 @@ function renderUjianHistory() {
       + '</div>'
       + '<div style="display:flex;gap:8px;">'
         + '<button onclick="lihatHasilUjian(\''+u.exam_id+'\')" style="flex:1;padding:8px;border-radius:9px;border:1.5px solid #059669;background:#F0FDF4;color:#059669;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">📊 Lihat Hasil</button>'
+        + '<button onclick="openEditUjian(\''+u.exam_id+'\')" style="padding:8px 12px;border-radius:9px;border:1.5px solid #BFDBFE;background:#EFF6FF;color:#1E40AF;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">✏️</button>'
         + '<button onclick="hapusUjian(\''+u.exam_id+'\')" style="padding:8px 12px;border-radius:9px;border:none;background:#FEE2E2;color:#991B1B;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🗑️ Hapus</button>'
       + '</div></div>';
   }).join('');
@@ -6976,6 +7196,7 @@ function renderTugasGuru() {
       + '<div style="font-size:11px;color:#64748B;margin-bottom:10px;">📅 Deadline: <strong>'+deadline+'</strong></div>'
       + '<div style="display:flex;gap:8px;">'
         + '<button onclick="openNilaiTugasModal(\''+t.id+'\',\''+t.judul+'\')" style="flex:1;padding:9px;border-radius:10px;border:none;background:linear-gradient(90deg,#059669,#10B981);color:#fff;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">📊 Buka & Nilai Tugas</button>'
+        + '<button onclick="openEditTugas(\''+t.id+'\')" style="padding:9px 12px;border-radius:10px;border:1.5px solid #BFDBFE;background:#EFF6FF;color:#1E40AF;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">✏️</button>'
         + '<button onclick="hapusTugas(\''+t.id+'\')" style="padding:9px 12px;border-radius:10px;border:none;background:#FEE2E2;color:#991B1B;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🗑️</button>'
       + '</div></div>';
   }).join('');
@@ -7254,12 +7475,25 @@ async function loadMateriGuru() {
   if (!container) return;
   container.innerHTML = '<div style="text-align:center;padding:16px;color:#64748B;font-size:12px;">⏳ Memuat materi...</div>';
   try {
+    var guruMapel = (currentGuru && currentGuru.mapel) || localStorage.getItem('guruMapel') || '';
+    var isAdmin = !guruMapel || guruMapel === 'Admin';
     var data = await sbFetch('/rest/v1/materi?select=*&order=created_at.desc&aktif=eq.true');
     if (!data || data.length === 0) {
       container.innerHTML = '<div style="text-align:center;padding:20px;background:#F8FAFC;border-radius:12px;color:#64748B;font-size:13px;font-weight:600;"><div style="font-size:28px;margin-bottom:8px;">📚</div>Belum ada materi. Tambah via tombol Upload Materi.</div>';
       return;
     }
+    // Filter berdasarkan mapel guru (admin melihat semua)
+    if (!isAdmin) {
+      data = data.filter(function(m) {
+        return !m.mapel || m.mapel === '' || m.mapel === guruMapel;
+      });
+    }
+    if (data.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:20px;background:#F8FAFC;border-radius:12px;color:#64748B;font-size:13px;font-weight:600;"><div style="font-size:28px;margin-bottom:8px;">📚</div>Belum ada materi untuk mapel <strong>' + guruMapel + '</strong>.</div>';
+      return;
+    }
     container.innerHTML = data.map(function(m) {
+      _materiCache[m.id] = m; // simpan ke cache untuk edit cepat
       var icon = '📄';
       if (m.tipe === 'video')  icon = '🎬';
       else if (m.tipe === 'gambar') icon = '🖼️';
@@ -7272,9 +7506,10 @@ async function loadMateriGuru() {
         + '<div style="width:40px;height:40px;border-radius:10px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">'+icon+'</div>'
         + '<div style="flex:1;min-width:0;">'
           + '<div style="font-size:13px;font-weight:800;color:#1E293B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+m.judul+'</div>'
-          + '<div style="font-size:10px;color:#64748B;font-weight:600;margin-top:2px;">'+sumber+' &nbsp;•&nbsp; '+tgl+(m.mapel?' &nbsp;•&nbsp; '+m.mapel:'')+'</div>'
+          + '<div style="font-size:10px;color:#64748B;font-weight:600;margin-top:2px;">'+sumber+' &nbsp;•&nbsp; '+tgl+(m.mapel?' &nbsp;•&nbsp; '+m.mapel:'')+(m.kelas&&m.kelas.length>0?' &nbsp;•&nbsp; 🏫 '+m.kelas.join(', '):'')+'</div>'
         + '</div>'
         + '<button onclick="hapusMateri(\''+m.id+'\')" style="background:#FEE2E2;color:#991B1B;border:none;border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer;flex-shrink:0;">🗑️</button>'
+        + '<button onclick="openEditMateri(\''+m.id+'\')" style="background:#EFF6FF;color:#1E40AF;border:none;border-radius:8px;padding:5px 9px;font-size:13px;cursor:pointer;flex-shrink:0;">✏️</button>'
       + '</div>';
     }).join('');
     // Update stat
@@ -7305,11 +7540,23 @@ async function loadMateriSiswa() {
   if (dokContainer) dokContainer.innerHTML = '';
 
   try {
-    var data = await sbFetch('/rest/v1/materi?select=id,judul,tipe,url,file_name,file_type,mapel,created_at&order=created_at.desc&aktif=eq.true');
+    var data = await sbFetch('/rest/v1/materi?select=id,judul,tipe,url,file_name,file_type,mapel,kelas,created_at&order=created_at.desc&aktif=eq.true');
     if (!data || data.length === 0) {
       if (vidContainer) vidContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#64748B;font-size:12px;">Belum ada materi video.</div>';
       return;
     }
+
+    // Filter berdasarkan kelas siswa
+    // Jika materi punya kelas[] kosong/null → tampil ke semua kelas
+    // Jika materi punya kelas[] isi → hanya tampil ke kelas yang ada di array
+    data = data.filter(function(m) {
+      if (!m.kelas || m.kelas.length === 0) return true; // semua kelas
+      if (!kelas) return true; // siswa belum ada kelas → lihat semua
+      return m.kelas.indexOf(kelas) !== -1;
+    });
+
+    // Normalize tipe
+    data.forEach(function(m){ if (!m.tipe) m.tipe = 'dokumen'; });
 
     var videos   = data.filter(function(m){ return m.tipe === 'video'; });
     var nonVideo = data.filter(function(m){ return m.tipe !== 'video'; });
@@ -8408,5 +8655,357 @@ async function uploadSiswaBatch(siswaList, filename) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+// EDIT MATERI — Open, Close, Simpan
+// ══════════════════════════════════════════════════════════════
+
+// Cache data materi untuk keperluan edit
+var _materiCache = {};
+
+function openEditMateri(id) {
+  // Cari data dari DOM cache atau fetch ulang
+  var modal = document.getElementById('edit-materi-modal');
+  if (!modal) return;
+
+  // Set status loading
+  var statusEl = document.getElementById('edit-materi-status');
+  if (statusEl) { statusEl.style.display = 'none'; }
+
+  // Coba ambil dari cache
+  var m = _materiCache[id];
+  if (m) {
+    _fillEditMateriForm(m);
+    modal.classList.add('open');
+    return;
+  }
+
+  // Fetch dari Supabase
+  fetch(SUPABASE_URL + '/rest/v1/materi?id=eq.' + encodeURIComponent(id) + '&select=*', {
+    headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+  }).then(function(r){ return r.json(); }).then(function(data) {
+    if (data && data[0]) {
+      _materiCache[id] = data[0];
+      _fillEditMateriForm(data[0]);
+      modal.classList.add('open');
+    } else {
+      showToast('⚠️ Data materi tidak ditemukan.', '#FEE2E2', '#991B1B');
+    }
+  }).catch(function(e) {
+    showToast('⚠️ Gagal memuat data materi.', '#FEE2E2', '#991B1B');
+  });
+}
+
+function _fillEditMateriForm(m) {
+  document.getElementById('edit-materi-id').value    = m.id || '';
+  document.getElementById('edit-materi-judul').value = m.judul || '';
+  document.getElementById('edit-materi-link').value  = m.url || '';
+  var mapelEl = document.getElementById('edit-materi-mapel');
+  if (mapelEl) mapelEl.value = m.mapel || '';
+  // Set kelas checkboxes
+  document.querySelectorAll('.edit-materi-kelas-cb').forEach(function(cb) {
+    cb.checked = Array.isArray(m.kelas) && m.kelas.includes(cb.value);
+  });
+}
+
+function closeEditMateriModal(e) {
+  var modal = document.getElementById('edit-materi-modal');
+  if (!e || e.target === modal) modal.classList.remove('open');
+}
+
+async function simpanEditMateri() {
+  var id    = document.getElementById('edit-materi-id').value;
+  var judul = document.getElementById('edit-materi-judul').value.trim();
+  var link  = document.getElementById('edit-materi-link').value.trim();
+  var mapel = document.getElementById('edit-materi-mapel').value;
+  var kelas = Array.from(document.querySelectorAll('.edit-materi-kelas-cb:checked')).map(function(c){ return c.value; });
+
+  if (!judul) { showToast('⚠️ Judul materi wajib diisi!', '#FEE2E2', '#991B1B'); return; }
+
+  var statusEl = document.getElementById('edit-materi-status');
+  var btn = document.querySelector('#edit-materi-modal .modal-save');
+  if (btn) { btn.textContent = '⏳ Menyimpan...'; btn.disabled = true; }
+
+  var payload = { judul: judul, mapel: mapel || null, kelas: kelas };
+  if (link) payload.url = link;
+
+  try {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/materi?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text());
+
+    // Update cache
+    if (_materiCache[id]) Object.assign(_materiCache[id], payload);
+
+    document.getElementById('edit-materi-modal').classList.remove('open');
+    showToast('✅ Materi berhasil diperbarui!', '#D1FAE5', '#065F46');
+    loadMateriGuru();
+  } catch(e) {
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = '#FEE2E2'; statusEl.style.color = '#991B1B';
+      statusEl.textContent = '❌ Gagal simpan: ' + (e.message || 'Cek koneksi.');
+    }
+  } finally {
+    if (btn) { btn.textContent = '💾 Simpan Perubahan'; btn.disabled = false; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// EDIT TUGAS — Open, Close, Simpan
+// ══════════════════════════════════════════════════════════════
+
+function openEditTugas(id) {
+  var modal = document.getElementById('edit-tugas-modal');
+  if (!modal) return;
+
+  // Cari dari tugasList lokal dulu (sudah di-load)
+  var t = (typeof tugasList !== 'undefined' ? tugasList : []).find(function(x){ return x.id === id || x.id == id; });
+
+  if (t) {
+    _fillEditTugasForm(t);
+    modal.classList.add('open');
+    return;
+  }
+
+  // Fetch dari Supabase jika tidak ada di lokal
+  fetch(SUPABASE_URL + '/rest/v1/tugas?id=eq.' + encodeURIComponent(id) + '&select=*', {
+    headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+  }).then(function(r){ return r.json(); }).then(function(data) {
+    if (data && data[0]) {
+      _fillEditTugasForm(data[0]);
+      modal.classList.add('open');
+    } else {
+      showToast('⚠️ Data tugas tidak ditemukan.', '#FEE2E2', '#991B1B');
+    }
+  }).catch(function() { showToast('⚠️ Gagal memuat data tugas.', '#FEE2E2', '#991B1B'); });
+}
+
+function _fillEditTugasForm(t) {
+  document.getElementById('edit-tugas-id').value       = t.id || '';
+  document.getElementById('edit-tugas-judul').value    = t.judul || '';
+  document.getElementById('edit-tugas-deskripsi').value= t.deskripsi || '';
+  document.getElementById('edit-tugas-bobot').value    = t.bobot_nilai || 100;
+  var mapelEl = document.getElementById('edit-tugas-mapel');
+  if (mapelEl) mapelEl.value = t.mapel_nama || t.mapel || '';
+  // Deadline — konversi ke format date input (YYYY-MM-DD)
+  if (t.deadline) {
+    try { document.getElementById('edit-tugas-deadline').value = new Date(t.deadline).toISOString().split('T')[0]; } catch(e){}
+  }
+  // Kelas checkboxes
+  var kelas = Array.isArray(t.kelas) ? t.kelas : (t.kelas ? [t.kelas] : []);
+  document.querySelectorAll('.edit-tugas-kelas-cb').forEach(function(cb) {
+    cb.checked = kelas.includes(cb.value);
+  });
+}
+
+function closeEditTugasModal(e) {
+  var modal = document.getElementById('edit-tugas-modal');
+  if (!e || e.target === modal) modal.classList.remove('open');
+}
+
+async function simpanEditTugas() {
+  var id       = document.getElementById('edit-tugas-id').value;
+  var judul    = document.getElementById('edit-tugas-judul').value.trim();
+  var mapel    = document.getElementById('edit-tugas-mapel').value;
+  var deadline = document.getElementById('edit-tugas-deadline').value;
+  var deskripsi= document.getElementById('edit-tugas-deskripsi').value.trim();
+  var bobot    = parseInt(document.getElementById('edit-tugas-bobot').value) || 100;
+  var kelas    = Array.from(document.querySelectorAll('.edit-tugas-kelas-cb:checked')).map(function(c){ return c.value; });
+
+  if (!judul)    { showToast('⚠️ Judul tugas wajib diisi!', '#FEE2E2', '#991B1B'); return; }
+  if (!deadline) { showToast('⚠️ Deadline wajib diisi!', '#FEE2E2', '#991B1B'); return; }
+  if (kelas.length === 0) { showToast('⚠️ Pilih minimal 1 kelas!', '#FEE2E2', '#991B1B'); return; }
+
+  var statusEl = document.getElementById('edit-tugas-status');
+  var btn = document.querySelector('#edit-tugas-modal .modal-save');
+  if (btn) { btn.textContent = '⏳ Menyimpan...'; btn.disabled = true; }
+
+  var payload = {
+    judul: judul,
+    mapel_nama: mapel,
+    deadline: new Date(deadline).toISOString(),
+    deskripsi: deskripsi,
+    bobot_nilai: bobot,
+    kelas: kelas
+  };
+
+  try {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/tugas?id=eq.' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text());
+
+    // Update lokal list
+    if (typeof tugasList !== 'undefined') {
+      var idx = tugasList.findIndex(function(t){ return t.id === id || t.id == id; });
+      if (idx >= 0) Object.assign(tugasList[idx], payload);
+    }
+
+    document.getElementById('edit-tugas-modal').classList.remove('open');
+    showToast('✅ Tugas berhasil diperbarui!', '#D1FAE5', '#065F46');
+    loadTugasGuru();
+    // Sinkron ke siswa
+    setTimeout(function(){ loadTugasSiswa && loadTugasSiswa(); }, 500);
+  } catch(e) {
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = '#FEE2E2'; statusEl.style.color = '#991B1B';
+      statusEl.textContent = '❌ Gagal simpan: ' + (e.message || 'Cek koneksi.');
+    }
+  } finally {
+    if (btn) { btn.textContent = '💾 Simpan Perubahan'; btn.disabled = false; }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// EDIT UJIAN — Open, Close, Simpan
+// ══════════════════════════════════════════════════════════════
+
+function openEditUjian(examId) {
+  var modal = document.getElementById('edit-ujian-modal');
+  if (!modal) return;
+
+  // Cari dari ujianDibuat lokal dulu
+  var u = (typeof ujianDibuat !== 'undefined' ? ujianDibuat : []).find(function(x){
+    return x.exam_id === examId || x.id === examId;
+  });
+
+  if (u) {
+    _fillEditUjianForm(u);
+    modal.classList.add('open');
+    return;
+  }
+
+  // Fetch dari Supabase
+  fetch(SUPABASE_URL + '/rest/v1/ujian?exam_id=eq.' + encodeURIComponent(examId) + '&select=*', {
+    headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+  }).then(function(r){ return r.json(); }).then(function(data) {
+    if (data && data[0]) {
+      _fillEditUjianForm(data[0]);
+      modal.classList.add('open');
+    } else {
+      showToast('⚠️ Data ujian tidak ditemukan.', '#FEE2E2', '#991B1B');
+    }
+  }).catch(function() { showToast('⚠️ Gagal memuat data ujian.', '#FEE2E2', '#991B1B'); });
+}
+
+function _fillEditUjianForm(u) {
+  document.getElementById('edit-ujian-id').value    = u.exam_id || u.id || '';
+  document.getElementById('edit-ujian-judul').value = u.judul || '';
+  document.getElementById('edit-ujian-durasi').value= u.durasi_menit || 60;
+  var mapelEl = document.getElementById('edit-ujian-mapel');
+  if (mapelEl) mapelEl.value = u.mapel || '';
+  // Datetime-local inputs
+  if (u.mulai_at) {
+    try {
+      var mulaiLocal = new Date(u.mulai_at);
+      mulaiLocal.setMinutes(mulaiLocal.getMinutes() - mulaiLocal.getTimezoneOffset());
+      document.getElementById('edit-ujian-mulai').value = mulaiLocal.toISOString().slice(0,16);
+    } catch(e){}
+  }
+  if (u.selesai_at) {
+    try {
+      var selesaiLocal = new Date(u.selesai_at);
+      selesaiLocal.setMinutes(selesaiLocal.getMinutes() - selesaiLocal.getTimezoneOffset());
+      document.getElementById('edit-ujian-selesai').value = selesaiLocal.toISOString().slice(0,16);
+    } catch(e){}
+  }
+  // Kelas checkboxes
+  var kelas = Array.isArray(u.kelas) ? u.kelas : (u.kelas ? [u.kelas] : []);
+  document.querySelectorAll('.edit-ujian-kelas-cb').forEach(function(cb) {
+    cb.checked = kelas.includes(cb.value);
+  });
+}
+
+function closeEditUjianModal(e) {
+  var modal = document.getElementById('edit-ujian-modal');
+  if (!e || e.target === modal) modal.classList.remove('open');
+}
+
+async function simpanEditUjian() {
+  var examId  = document.getElementById('edit-ujian-id').value;
+  var judul   = document.getElementById('edit-ujian-judul').value.trim();
+  var mapel   = document.getElementById('edit-ujian-mapel').value;
+  var durasi  = parseInt(document.getElementById('edit-ujian-durasi').value) || 60;
+  var mulai   = document.getElementById('edit-ujian-mulai').value;
+  var selesai = document.getElementById('edit-ujian-selesai').value;
+  var kelas   = Array.from(document.querySelectorAll('.edit-ujian-kelas-cb:checked')).map(function(c){ return c.value; });
+
+  if (!judul)   { showToast('⚠️ Judul ujian wajib diisi!', '#FEE2E2', '#991B1B'); return; }
+  if (!mulai)   { showToast('⚠️ Waktu mulai wajib diisi!', '#FEE2E2', '#991B1B'); return; }
+  if (!selesai) { showToast('⚠️ Waktu selesai wajib diisi!', '#FEE2E2', '#991B1B'); return; }
+  if (kelas.length === 0) { showToast('⚠️ Pilih minimal 1 kelas!', '#FEE2E2', '#991B1B'); return; }
+
+  var mulaiDate   = new Date(mulai);
+  var selesaiDate = new Date(selesai);
+  if (selesaiDate <= mulaiDate) { showToast('⚠️ Waktu selesai harus setelah waktu mulai!', '#FEE2E2', '#991B1B'); return; }
+
+  var now = new Date();
+  var status = mulaiDate <= now && now <= selesaiDate ? 'aktif' : mulaiDate > now ? 'akan' : 'selesai';
+
+  var statusEl = document.getElementById('edit-ujian-status');
+  var btn = document.querySelector('#edit-ujian-modal .modal-save');
+  if (btn) { btn.textContent = '⏳ Menyimpan...'; btn.disabled = true; }
+
+  var payload = {
+    judul: judul,
+    mapel: mapel,
+    durasi_menit: durasi,
+    mulai_at: mulaiDate.toISOString(),
+    selesai_at: selesaiDate.toISOString(),
+    kelas: kelas,
+    aktif: true
+  };
+
+  try {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/ujian?exam_id=eq.' + encodeURIComponent(examId), {
+      method: 'PATCH',
+      headers: {
+        'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text());
+
+    // Update lokal ujianDibuat
+    if (typeof ujianDibuat !== 'undefined') {
+      var idx = ujianDibuat.findIndex(function(u){ return u.exam_id === examId || u.id === examId; });
+      if (idx >= 0) Object.assign(ujianDibuat[idx], payload, { status: status });
+    }
+
+    document.getElementById('edit-ujian-modal').classList.remove('open');
+    showToast('✅ Ujian berhasil diperbarui!', '#D1FAE5', '#065F46');
+    renderUjianHistory();
+    // Sinkron ke siswa
+    if (typeof renderUjianSiswa === 'function') setTimeout(renderUjianSiswa, 400);
+  } catch(e) {
+    if (statusEl) {
+      statusEl.style.display = 'block';
+      statusEl.style.background = '#FEE2E2'; statusEl.style.color = '#991B1B';
+      statusEl.textContent = '❌ Gagal simpan: ' + (e.message || 'Cek koneksi.');
+    }
+  } finally {
+    if (btn) { btn.textContent = '💾 Simpan Perubahan'; btn.disabled = false; }
+  }
+}
+
+// Cache materi saat loadMateriGuru berhasil
+(function() {
+  var _origLoad = typeof loadMateriGuru === 'function' ? loadMateriGuru : null;
+})();
+
 </script>
+</body>
 </html>
