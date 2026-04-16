@@ -3192,46 +3192,70 @@ async function loadTeacherNotif() {
   if (!el) return;
   el.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;">⏳ Memuat notifikasi...</div>';
 
+  var guruMapel = getGuruMapel();
+  var isAdmin   = !guruMapel;
   var items = [];
 
-  // 1. Exam logs: pelanggaran, ujian mulai/selesai, minta retry
+  // 1. Exam logs: pelanggaran, ujian, retry — filter by mapel
   try {
-    var logData = await sbFetch('/rest/v1/exam_logs?select=*&order=created_at.desc&limit=20');
+    var logData = await sbFetch('/rest/v1/exam_logs?select=*&order=created_at.desc&limit=50');
     if (logData && logData.length > 0) {
+      // Filter by mapel guru
+      if (!isAdmin) {
+        logData = logData.filter(function(log) {
+          if (log.data && log.data.mapel) return _mapelMatch(log.data.mapel, guruMapel);
+          var eid = (log.exam_id || '').toLowerCase();
+          return _getMapelKeywords(guruMapel).some(function(kw){ return eid.indexOf(kw) !== -1; });
+        });
+      }
       logData.forEach(function(log) {
-        var icon = '🔔', title = log.event_type || 'Aktivitas', body = '', dot = 'nd-read';
+        var icon = '🔔', title = '', body = '', dot = 'nd-read';
         var waktu = log.created_at
           ? new Date(log.created_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
           : '';
-        if (log.event_type === 'exam_cancelled' || log.event_type === 'violation') {
+        if (log.event_type === 'exam_cancelled') {
           icon = '🚫'; dot = 'nd-new';
+          title = 'Ujian Dibatalkan — ' + (log.siswa_name || '-');
+          body  = '📋 ' + ((log.data && log.data.reason) || 'Pelanggaran terdeteksi');
+        } else if (log.event_type === 'violation') {
+          icon = '⚠️'; dot = 'nd-new';
           title = 'Pelanggaran — ' + (log.siswa_name || '-');
-          body  = (log.data && log.data.reason) || 'Pelanggaran ujian terdeteksi';
+          body  = '📋 ' + ((log.data && log.data.reason) || 'Pelanggaran ujian');
         } else if (log.event_type === 'retry_request') {
           icon = '📨'; dot = 'nd-new';
-          title = 'Minta Ujian Ulang — ' + (log.siswa_name || '-');
-          body  = (log.data && log.data.alasan) || '';
-        } else if (log.event_type === 'exam_finished') {
+          title = 'Minta Remidi — ' + (log.siswa_name || '-');
+          body  = '💬 ' + ((log.data && log.data.alasan) || 'Tanpa alasan');
+        } else if (log.event_type === 'exam_submitted') {
           icon = '✅'; dot = 'nd-new';
           title = 'Selesai Ujian — ' + (log.siswa_name || '-');
-          body  = 'Nilai: ' + ((log.data && log.data.score != null) ? log.data.score : '?');
+          body  = '🏆 Nilai: ' + ((log.data && log.data.score != null) ? log.data.score + '/100' : 'menunggu');
         } else if (log.event_type === 'exam_started') {
           icon = '📝';
           title = 'Mulai Ujian — ' + (log.siswa_name || '-');
-          body  = 'Siswa mulai mengerjakan ujian';
+          body  = '📚 ' + (log.exam_id || '');
+        } else if (log.event_type === 'retry_approved') {
+          icon = '🔓';
+          title = 'Remidi Diizinkan — ' + (log.siswa_name || '-');
+          body  = '✅ Blokir dibuka oleh guru';
         } else if (log.event_type === 'student_login') {
           icon = '👤';
           title = 'Login Siswa — ' + (log.siswa_name || '-');
-        }
-        items.push({ icon:icon, title:title, body:body, dot:dot, waktu:waktu, ts:log.created_at||'' });
+          body  = '';
+        } else { return; } // skip event lain
+        if (title) items.push({ icon, title, body, dot, waktu, ts: log.created_at||'' });
       });
     }
   } catch(e) { console.warn('loadTeacherNotif exam_logs:', e); }
 
-  // 2. Tugas baru dikumpulkan siswa
+  // 2. Tugas dikumpulkan siswa — filter by mapel
   try {
-    var submitData = await sbFetch('/rest/v1/tugas_submit?select=*&order=submitted_at.desc&limit=10');
+    var submitData = await sbFetch('/rest/v1/tugas_submit?select=*&order=submitted_at.desc&limit=20');
     if (submitData && submitData.length > 0) {
+      if (!isAdmin && guruMapel) {
+        submitData = submitData.filter(function(s){
+          return !s.mapel || _mapelMatch(s.mapel, guruMapel);
+        });
+      }
       submitData.forEach(function(s) {
         var waktu = s.submitted_at
           ? new Date(s.submitted_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})
@@ -3239,8 +3263,8 @@ async function loadTeacherNotif() {
         items.push({
           icon:'✍️', dot:'nd-new',
           title:'Tugas Dikumpulkan — ' + (s.siswa_nama || 'Siswa'),
-          body: '📎 ' + (s.file_url || 'File tugas'),
-          waktu: waktu, ts: s.submitted_at || ''
+          body: '📎 ' + (s.tugas_judul || 'Tugas') + (s.mapel ? ' • ' + s.mapel : ''),
+          waktu, ts: s.submitted_at || ''
         });
       });
     }
@@ -3250,16 +3274,18 @@ async function loadTeacherNotif() {
   items.sort(function(a, b) { return (b.ts > a.ts) ? 1 : -1; });
 
   if (items.length === 0) {
+    var filterInfo = isAdmin ? 'semua mapel' : 'mapel ' + guruMapel;
     el.innerHTML = '<div style="text-align:center;padding:28px 16px;">'
       + '<div style="font-size:36px;margin-bottom:10px;">🔔</div>'
       + '<div style="font-size:13px;font-weight:700;color:#1E293B;margin-bottom:6px;">Belum ada notifikasi</div>'
-      + '<div style="font-size:11px;color:#64748B;line-height:1.6;">Notifikasi akan muncul saat:<br>'
-      + '📝 Siswa mulai/selesai ujian<br>✍️ Siswa kumpul tugas<br>🚫 Ada pelanggaran ujian</div>'
+      + '<div style="font-size:11px;color:#64748B;line-height:1.6;">Filter: ' + filterInfo + '<br>'
+      + 'Notifikasi muncul saat:<br>'
+      + '📝 Siswa mulai/selesai ujian<br>✍️ Siswa kumpul tugas<br>🚫 Ada pelanggaran ujian<br>📨 Siswa minta remidi</div>'
       + '</div>';
     return;
   }
 
-  el.innerHTML = items.slice(0, 25).map(function(item) {
+  el.innerHTML = items.slice(0, 30).map(function(item) {
     return '<div class="notif-item">'
       + '<div class="notif-dot ' + item.dot + '"></div>'
       + '<div class="notif-ico">' + item.icon + '</div>'
@@ -7182,37 +7208,121 @@ var stuNotifUnread = 0;
 
 async function loadNotifSiswa(kelasSiswa) {
   try {
-    // Load ujian baru yang di-publish untuk kelas ini
-    var data = await sbFetch('/rest/v1/ujian?select=*&order=created_at.desc&aktif=eq.true&limit=10');
-    if (!data) return;
+    var nisn  = '';
+    try { nisn = localStorage.getItem('stuNisn') || ''; } catch(e2){}
 
-    var filtered = data.filter(function(u) {
-      if (!kelasSiswa) return true;
-      var kls = u.kelas;
-      if (!kls || kls.length === 0) return true;
-      if (Array.isArray(kls)) return kls.indexOf(kelasSiswa) !== -1;
-      return typeof kls === 'string' && kls.indexOf(kelasSiswa) !== -1;
-    });
+    var items = [];
+    var now   = new Date();
+    var batas24 = new Date(now - 24 * 3600 * 1000);
+    var batas7  = new Date(now - 7  * 24 * 3600 * 1000);
 
-    // Deduplicate
-    filtered = deduplicateUjian(filtered);
-    stuNotifList = filtered;
+    // 1. Ujian baru/aktif untuk kelas siswa
+    try {
+      var ujianData = await sbFetch('/rest/v1/ujian?select=*&order=created_at.desc&aktif=eq.true&limit=20');
+      if (ujianData) {
+        ujianData.filter(function(u) {
+          var kls = Array.isArray(u.kelas) ? u.kelas : [];
+          return !kelasSiswa || kls.length === 0 || kls.indexOf(kelasSiswa) !== -1;
+        }).forEach(function(u) {
+          var mulai   = u.mulai_at ? new Date(u.mulai_at) : now;
+          var selesai = u.selesai_at ? new Date(u.selesai_at) : null;
+          var created = u.created_at ? new Date(u.created_at) : now;
+          var isNew   = created > batas24;
+          var isAktif = mulai <= now && (!selesai || selesai > now);
+          var isAkan  = mulai > now;
+          var mulaiStr = mulai.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+          items.push({
+            icon: isAktif ? '🟢' : '🟣',
+            title: (isAktif ? 'Ujian Aktif' : 'Ujian Akan Datang') + ' — ' + u.judul,
+            body: '📚 ' + (u.mapel||'') + ' • ⏱ ' + (u.durasi_menit||60) + ' menit',
+            sub: '📅 ' + mulaiStr,
+            isNew: isNew,
+            ts: u.created_at || ''
+          });
+        });
+      }
+    } catch(e3) {}
 
-    // Check for new ujian (created in last 24 hours)
-    var now = new Date();
-    var newUjian = filtered.filter(function(u) {
-      if (!u.created_at) return false;
-      var created = new Date(u.created_at);
-      return (now - created) < 24 * 3600 * 1000;
-    });
+    // 2. Tugas baru untuk kelas siswa
+    try {
+      var tugasData = await sbFetch('/rest/v1/tugas?select=*&order=created_at.desc&aktif=eq.true&limit=10');
+      if (tugasData) {
+        tugasData.filter(function(t) {
+          var kls = Array.isArray(t.kelas) ? t.kelas : [];
+          return !kelasSiswa || kls.length === 0 || kls.indexOf(kelasSiswa) !== -1;
+        }).forEach(function(t) {
+          var dl      = t.deadline ? new Date(t.deadline) : null;
+          var dlStr   = dl ? dl.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) : '-';
+          var created = t.created_at ? new Date(t.created_at) : now;
+          var isNew   = created > batas7;
+          var isLewat = dl && dl < now;
+          items.push({
+            icon: isLewat ? '🔴' : '✍️',
+            title: 'Tugas' + (isLewat ? ' (Lewat Deadline)' : ' Baru') + ' — ' + t.judul,
+            body: '📚 ' + (t.mapel_nama||'') + ' • Bobot: ' + (t.bobot_nilai||100) + '%',
+            sub: '⏰ Deadline: ' + dlStr,
+            isNew: isNew && !isLewat,
+            ts: t.created_at || ''
+          });
+        });
+      }
+    } catch(e4) {}
 
-    stuNotifUnread = newUjian.length;
+    // 3. Nilai ujian sudah keluar (exam_results milik siswa ini)
+    try {
+      var nilaiQuery = nisn
+        ? '/rest/v1/exam_results?siswa_nisn=eq.' + encodeURIComponent(nisn) + '&select=*&order=finished_at.desc&limit=5'
+        : null;
+      if (nilaiQuery) {
+        var nilaiData = await sbFetch(nilaiQuery);
+        if (nilaiData) {
+          nilaiData.forEach(function(r) {
+            var selesai = r.finished_at ? new Date(r.finished_at) : now;
+            var isNew   = selesai > batas7;
+            items.push({
+              icon: '🏆',
+              title: 'Nilai Ujian Keluar — ' + (r.exam_title || r.exam_id),
+              body: '🎯 Nilai: ' + (r.score !== null ? r.score + '/100' : '-') + ' • Benar: ' + (r.correct_answers||0) + ' soal',
+              sub: '📅 ' + selesai.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}),
+              isNew: isNew,
+              ts: r.finished_at || ''
+            });
+          });
+        }
+      }
+    } catch(e5) {}
 
-    // Update bell badge
+    // 4. Remidi diizinkan guru
+    try {
+      var retryData = await sbFetch('/rest/v1/exam_logs?event_type=eq.retry_approved&select=*&order=created_at.desc&limit=5');
+      if (retryData && nisn) {
+        retryData.filter(function(r){
+          return r.data && (r.data.nisn === nisn || r.siswa_name === localStorage.getItem('stuNama'));
+        }).forEach(function(r) {
+          var ts    = r.created_at ? new Date(r.created_at) : now;
+          var isNew = ts > batas7;
+          items.push({
+            icon: '🔓',
+            title: 'Remidi Diizinkan — ' + (r.exam_id || ''),
+            body: '✅ Guru telah membuka blokir ujian Anda',
+            sub: '📅 ' + ts.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}),
+            isNew: isNew,
+            ts: r.created_at || ''
+          });
+        });
+      }
+    } catch(e6) {}
+
+    // Sort terbaru dulu
+    items.sort(function(a,b){ return (b.ts > a.ts) ? 1 : -1; });
+    stuNotifList = items;
+    stuNotifUnread = items.filter(function(i){ return i.isNew; }).length;
+
+    // Update badge lonceng
     var bellBadge = document.getElementById('stu-bell-badge');
     if (bellBadge) {
       if (stuNotifUnread > 0) {
-        bellBadge.textContent = stuNotifUnread;
+        bellBadge.textContent = stuNotifUnread > 9 ? '9+' : stuNotifUnread;
         bellBadge.style.display = 'flex';
       } else {
         bellBadge.style.display = 'none';
@@ -7239,26 +7349,24 @@ function renderStuNotif() {
   var listEl = document.getElementById('stu-notif-content');
   if (!listEl) return;
 
-  if (stuNotifList.length === 0) {
-    listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;">Belum ada pemberitahuan.</div>';
+  if (!stuNotifList || stuNotifList.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;padding:24px 16px;">'
+      + '<div style="font-size:32px;margin-bottom:8px;">🔔</div>'
+      + '<div style="font-size:13px;font-weight:700;color:#1E293B;margin-bottom:4px;">Belum ada notifikasi</div>'
+      + '<div style="font-size:11px;color:#64748B;">Notifikasi akan muncul saat ada ujian, tugas baru, atau nilai keluar.</div>'
+      + '</div>';
     return;
   }
 
-  listEl.innerHTML = stuNotifList.map(function(u) {
-    var now = new Date();
-    var mulai = u.mulai_at ? new Date(u.mulai_at) : now;
-    var isAktif = mulai <= now;
-    var mulaiStr = mulai.toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-    var icon = isAktif ? '🟢' : '🟣';
-    var status = isAktif ? 'Ujian Aktif' : 'Akan Datang';
-
+  listEl.innerHTML = stuNotifList.map(function(item) {
+    var dotClass = item.isNew ? 'nd-new' : 'nd-read';
     return '<div class="notif-item">'
-      + '<div class="notif-dot nd-new"></div>'
-      + '<div class="notif-ico">📝</div>'
+      + '<div class="notif-dot ' + dotClass + '"></div>'
+      + '<div class="notif-ico">' + item.icon + '</div>'
       + '<div class="notif-txt">'
-        + '<div class="nt">'+icon+' '+status+' — '+u.judul+'</div>'
-        + '<div class="nb">📚 '+(u.mapel||'')+' • ⏱ '+(u.durasi_menit||60)+' menit</div>'
-        + '<div class="ntm">📅 '+mulaiStr+'</div>'
+        + '<div class="nt">' + item.title + (item.isNew ? ' <span style="background:#EFF6FF;color:#1E40AF;font-size:9px;padding:1px 5px;border-radius:99px;font-weight:800;vertical-align:middle;">BARU</span>' : '') + '</div>'
+        + (item.body ? '<div class="nb">' + item.body + '</div>' : '')
+        + '<div class="ntm">' + item.sub + '</div>'
       + '</div>'
     + '</div>';
   }).join('');
@@ -8468,17 +8576,30 @@ function startNotifPolling() {
 var _lastNotifCount = 0;
 async function checkNewTeacherNotifs() {
   try {
-    var data = await sbFetch('/rest/v1/exam_logs?select=id&order=created_at.desc&limit=20');
-    var count = data ? data.length : 0;
+    var guruMapel = getGuruMapel();
+    var data = await sbFetch('/rest/v1/exam_logs?select=id,event_type,exam_id,data,created_at&order=created_at.desc&limit=50');
+    if (!data) return;
+
+    // Filter by mapel guru
+    if (guruMapel) {
+      data = data.filter(function(log) {
+        if (log.data && log.data.mapel) return _mapelMatch(log.data.mapel, guruMapel);
+        var eid = (log.exam_id || '').toLowerCase();
+        return _getMapelKeywords(guruMapel).some(function(kw){ return eid.indexOf(kw) !== -1; });
+      });
+    }
+
+    // Hitung hanya event yang relevan untuk guru
+    var relevant = data.filter(function(l){
+      return ['exam_cancelled','violation','retry_request','exam_submitted','exam_started'].indexOf(l.event_type) !== -1;
+    });
+    var count = relevant.length;
+
     if (count > _lastNotifCount && _lastNotifCount > 0) {
       var diff = count - _lastNotifCount;
-      // Update badge
       var badge = document.getElementById('tea-notif-badge');
-      if (badge) {
-        badge.textContent = diff;
-        badge.style.display = 'flex';
-      }
-      showToast('🔔 Ada ' + diff + ' notifikasi baru dari siswa!', '#DBEAFE', '#1E40AF');
+      if (badge) { badge.textContent = diff; badge.style.display = 'flex'; }
+      showToast('🔔 ' + diff + ' notifikasi baru' + (guruMapel ? ' — ' + guruMapel : '') + '!', '#DBEAFE', '#1E40AF');
     }
     _lastNotifCount = count;
   } catch(e) {}
