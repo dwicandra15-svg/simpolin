@@ -1215,8 +1215,14 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 
       <!-- Refresh button -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-        <div style="font-size:14px;font-weight:800;color:var(--text);">🚨 Daftar Pelanggaran</div>
-        <button onclick="loadViolations()" style="padding:5px 12px;border-radius:99px;border:1.5px solid #DC2626;background:#fff;color:#DC2626;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">🔄 Refresh</button>
+        <div>
+          <div style="font-size:14px;font-weight:800;color:var(--text);">🚨 Daftar Pelanggaran</div>
+          <div id="vio-mapel-info" style="font-size:10px;color:#64748B;font-weight:600;margin-top:2px;"></div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button onclick="hapusSemuaViolation()" style="padding:5px 12px;border-radius:99px;border:1.5px solid #64748B;background:#fff;color:#64748B;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">🗑️ Hapus Semua</button>
+          <button onclick="loadViolations()" style="padding:5px 12px;border-radius:99px;border:1.5px solid #DC2626;background:#fff;color:#DC2626;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">🔄 Refresh</button>
+        </div>
       </div>
 
       <div id="violation-list" style="display:flex;flex-direction:column;gap:8px;">
@@ -1224,6 +1230,17 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
         <div id="vio-loading" style="text-align:center;padding:30px;color:#64748B;font-size:13px;font-weight:600;">
           <div style="font-size:32px;margin-bottom:8px;">🔍</div>
           Memuat data pelanggaran...
+        </div>
+      </div>
+
+      <!-- Panel Permintaan Remidi -->
+      <div style="margin-top:18px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-size:14px;font-weight:800;color:var(--text);">📨 Permintaan Remidi Siswa</div>
+          <button onclick="loadRetryRequests()" style="padding:5px 12px;border-radius:99px;border:1.5px solid #D97706;background:#fff;color:#D97706;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">🔄 Refresh</button>
+        </div>
+        <div id="retry-requests-container" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="text-align:center;padding:14px;color:#64748B;font-size:12px;font-weight:600;background:#FFFBEB;border-radius:10px;">Belum ada permintaan remidi.</div>
         </div>
       </div>
     </div>
@@ -1274,7 +1291,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
     <div class="bn-item active-tea" onclick="switchTeaTab('beranda',this)"><div class="bn-icon">🏠</div><div class="bn-label">Beranda</div></div>
     <div class="bn-item" onclick="switchTeaTab('siswa',this)"><div class="bn-icon">👨‍🎓</div><div class="bn-label">Siswa</div></div>
     <div class="bn-item" onclick="switchTeaTab('tugas',this)"><div class="bn-icon">✍️</div><div class="bn-label">Tugas</div><div class="bn-badge" id="tea-tugas-badge" style="display:none;">0</div></div>
-    <div class="bn-item" id="tea-nav-pelanggaran" onclick="switchTeaTab('pelanggaran',this);loadViolations();"><div class="bn-icon">🚨</div><div class="bn-label">Pelanggaran</div><div class="bn-badge" id="vio-badge" style="display:none;">0</div></div>
+    <div class="bn-item" id="tea-nav-pelanggaran" onclick="switchTeaTab('pelanggaran',this);loadViolations();loadRetryRequests();"><div class="bn-icon">🚨</div><div class="bn-label">Pelanggaran</div><div class="bn-badge" id="vio-badge" style="display:none;">0</div></div>
     <div class="bn-item" onclick="switchTeaTab('laporan',this)"><div class="bn-icon">📊</div><div class="bn-label">Laporan</div></div>
   </div>
 </div>
@@ -1988,17 +2005,11 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
         <div style="font-size:10px;color:#059669;margin-top:2px;">Urutan soal berbeda untuk setiap siswa</div>
       </div>
       <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
-        <input type="checkbox" id="ujian-acak-soal" style="opacity:0;width:0;height:0;">
+        <input type="checkbox" id="ujian-acak-soal" style="opacity:0;width:0;height:0;" onchange="toggleAcakSoal(this)">
         <span style="position:absolute;top:0;left:0;right:0;bottom:0;background:#CBD5E1;border-radius:99px;transition:.3s;" id="acak-slider"></span>
         <span style="position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:.3s;" id="acak-thumb"></span>
       </label>
     </div>
-    <script>
-    document.getElementById('ujian-acak-soal').addEventListener('change', function() {
-      document.getElementById('acak-slider').style.background = this.checked ? '#059669' : '#CBD5E1';
-      document.getElementById('acak-thumb').style.left = this.checked ? '23px' : '3px';
-    });
-    </script>
     <div style="display:flex;gap:8px;">
       <button class="modal-cancel" onclick="closeBuatUjianModal()">Batal</button>
       <button class="modal-save" onclick="simpanUjian()">💾 Buat Ujian</button>
@@ -2426,31 +2437,54 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 <div class="logo-modal-overlay" id="sudah-ujian-modal" onclick="closeSudahUjianModal(event)">
   <div class="logo-modal-box">
     <div style="text-align:center;margin-bottom:14px;">
-      <div style="font-size:40px;margin-bottom:8px;">🚫</div>
-      <h3 style="margin:0;">Ujian Sudah Dikerjakan</h3>
+      <div style="font-size:44px;margin-bottom:8px;">🔒</div>
+      <h3 style="margin:0;color:#991B1B;">Ujian Sudah Dikerjakan</h3>
+      <p style="font-size:12px;color:#64748B;margin:4px 0 0;">Akses ujian ini telah diblokir untuk NISN Anda</p>
     </div>
-    <div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:12px;padding:12px;margin-bottom:14px;">
-      <div style="font-size:12px;font-weight:800;color:#991B1B;margin-bottom:6px;">📋 Riwayat Pengerjaan:</div>
-      <div style="font-size:13px;font-weight:700;color:#1E293B;" id="sui-judul"></div>
+
+    <!-- Riwayat pengerjaan -->
+    <div style="background:#FEF2F2;border:1.5px solid #FCA5A5;border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:800;color:#991B1B;margin-bottom:8px;">📋 Riwayat Pengerjaan Anda:</div>
+      <div style="font-size:13px;font-weight:800;color:#1E293B;" id="sui-judul"></div>
       <div style="font-size:12px;color:#64748B;margin-top:4px;">👤 <span id="sui-nama"></span></div>
-      <div style="display:flex;gap:12px;margin-top:8px;">
+      <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap;">
         <span style="font-size:12px;font-weight:800;color:#059669;">🏆 Nilai: <span id="sui-nilai"></span></span>
-        <span style="font-size:11px;color:#64748B;">📅 <span id="sui-waktu"></span></span>
+        <span style="font-size:11px;color:#64748B;font-weight:600;">📅 <span id="sui-waktu"></span></span>
       </div>
     </div>
+
+    <!-- Info blokir -->
+    <div style="background:#FEF3C7;border:1.5px solid #FDE68A;border-radius:12px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:12px;font-weight:800;color:#92400E;margin-bottom:6px;">⚠️ Ketentuan 1 Kali Pengerjaan</div>
+      <div style="font-size:11px;color:#B45309;line-height:1.7;">
+        • Setiap siswa hanya diperbolehkan mengerjakan ujian <strong>1 kali</strong><br>
+        • Akses ujian ini <strong>otomatis diblokir</strong> setelah selesai dikerjakan<br>
+        • Untuk <strong>remidi</strong>, hubungi guru mapel terkait agar blokir dibuka
+      </div>
+    </div>
+
+    <!-- Cara remidi -->
+    <div style="background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:12px;padding:12px;margin-bottom:14px;">
+      <div style="font-size:12px;font-weight:800;color:#1E40AF;margin-bottom:6px;">📞 Cara Mengajukan Remidi:</div>
+      <div style="font-size:11px;color:#1D4ED8;line-height:1.7;">
+        1. Hubungi <strong>guru mapel</strong> secara langsung<br>
+        2. Sampaikan NISN dan nama ujian yang ingin diulang<br>
+        3. Guru akan membuka blokir dari menu <strong>Pelanggaran → Izinkan Remidi</strong><br>
+        4. Setelah dibuka, Anda bisa mengerjakan ujian lagi
+      </div>
+    </div>
+
     <input type="hidden" id="sui-exam-id">
     <input type="hidden" id="sui-siswa-nama">
-    <div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:12px;padding:12px;margin-bottom:12px;">
-      <div style="font-size:11px;font-weight:800;color:#92400E;margin-bottom:4px;">⚠️ Setiap siswa hanya boleh mengerjakan 1x</div>
-      <div style="font-size:11px;color:#B45309;">Jika ingin mengerjakan ulang, diperlukan persetujuan guru.</div>
-    </div>
+
+    <!-- Form kirim permintaan ke guru -->
     <div class="s-field">
-      <label>ALASAN MINTA PENGERJAAN ULANG</label>
-      <textarea id="sui-alasan" rows="2" placeholder="Jelaskan alasan Anda..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;resize:none;"></textarea>
+      <label>KIRIM PERMINTAAN REMIDI KE GURU <span style="font-size:10px;color:var(--muted);font-weight:600;">(opsional)</span></label>
+      <textarea id="sui-alasan" rows="2" placeholder="Tulis alasan ingin remidi (contoh: terganggu saat ujian, salah klik, dll)..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;resize:none;"></textarea>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;">
       <button class="modal-cancel" onclick="closeSudahUjianModal()">Tutup</button>
-      <button class="modal-save" style="background:linear-gradient(90deg,#D97706,#F59E0B);" onclick="kirimPermintaanRetry()">📨 Minta Izin Guru</button>
+      <button class="modal-save" style="background:linear-gradient(90deg,#D97706,#F59E0B);" onclick="kirimPermintaanRetry()">📨 Kirim ke Guru</button>
     </div>
   </div>
 </div>
@@ -3992,6 +4026,7 @@ var examState = {
   active: false,
   examId: null,
   examTitle: '',
+  examMapel: '',
   questions: [],
   answers: {},
   timeLeft: 0,
@@ -4044,6 +4079,7 @@ async function launchExam(title, durasiMenit, examId) {
   examState.active    = true;
   examState.examId    = examId || 'ujian-' + Date.now();
   examState.examTitle = title || 'Ujian';
+  examState.examMapel = '';
   examState.answers   = {};
   examState.timeLeft  = (durasiMenit || 60) * 60;
   examState.violations = 0;
@@ -4054,13 +4090,17 @@ async function launchExam(title, durasiMenit, examId) {
   // Coba load soal dari Supabase berdasarkan exam soal_ids
   var questions = [];
   try {
-    // Ambil data ujian untuk dapat soal_ids dan acak_soal flag
-    var ujianRes = await fetch(SUPABASE_URL + '/rest/v1/ujian?exam_id=eq.' + encodeURIComponent(examId) + '&select=soal_ids,acak_soal,judul', {
+    // Ambil data ujian untuk dapat soal_ids, acak_soal, dan mapel
+    var ujianRes = await fetch(SUPABASE_URL + '/rest/v1/ujian?exam_id=eq.' + encodeURIComponent(examId) + '&select=soal_ids,acak_soal,judul,mapel', {
       headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
     });
     if (ujianRes.ok) {
       var ujianData = await ujianRes.json();
       var ujianInfo = ujianData && ujianData[0];
+      if (ujianInfo) {
+        // Simpan mapel ke examState agar bisa dipakai di log
+        examState.examMapel = ujianInfo.mapel || '';
+      }
       if (ujianInfo && ujianInfo.soal_ids && ujianInfo.soal_ids.length > 0) {
         // Load soal berdasarkan id
         var soalRes = await fetch(SUPABASE_URL + '/rest/v1/soal?id=in.(' + ujianInfo.soal_ids.join(',') + ')&select=*', {
@@ -4108,7 +4148,7 @@ async function launchExam(title, durasiMenit, examId) {
   requestFullscreen();
   startTimer();
   startAntiCheat();
-  logToSupabase('exam_started', { examId: examState.examId, siswa: examState.siswaName });
+  logToSupabase('exam_started', { examId: examState.examId, siswa: examState.siswaName, mapel: examState.examMapel });
 }
 
 // ════════════════════════════════════════════════
@@ -4489,13 +4529,17 @@ function exitFullscreen() {
 // ════════════════════════════════════════════════
 async function logToSupabase(eventType, data) {
   try {
+    // Selalu sertakan mapel agar filter per guru bisa bekerja
+    var dataWithMapel = Object.assign({}, data, {
+      mapel: (data && data.mapel) || examState.examMapel || ''
+    });
     await sbFetch('/rest/v1/exam_logs', {
       method: 'POST',
       body: JSON.stringify({
         event_type: eventType,
         exam_id: examState.examId,
         siswa_name: examState.siswaName,
-        data: data,
+        data: dataWithMapel,
         created_at: new Date().toISOString()
       })
     });
@@ -4567,46 +4611,107 @@ async function loadGuruFromSupabase(nip) {
 var allViolations = [];
 var currentFilter = 'semua';
 
-// Load violations from Supabase
+// Load violations from Supabase — hanya tampilkan log milik mapel guru yang login
 async function loadViolations() {
   var loadEl = document.getElementById('vio-loading');
-  var listEl = document.getElementById('violation-list');
   if (loadEl) loadEl.style.display = 'block';
 
-  try {
-    // Fetch from Supabase exam_logs
-    var data = await sbFetch('/rest/v1/exam_logs?select=*&order=created_at.desc&limit=50');
+  // Ambil mapel guru yang sedang login
+  var guruMapel = getGuruMapel(); // null = admin (lihat semua)
+  var isAdmin   = !guruMapel;
 
-    // If no Supabase data yet, use local examState log as demo
-    if (!data || data.length === 0) {
-      data = getDemoViolations();
+  try {
+    // Fetch semua exam_logs terbaru
+    var data = await sbFetch('/rest/v1/exam_logs?select=*&order=created_at.desc&limit=200');
+
+    if (!data) data = [];
+
+    // ── FILTER BERDASARKAN MAPEL GURU ──
+    // exam_id biasanya format: "ujian-big-01", "ujian-mat-01", dll
+    // atau disimpan di data.mapel jika ada
+    if (!isAdmin && guruMapel && data.length > 0) {
+      var mapelKey = guruMapel.toLowerCase()
+        .replace('bhs. ', '').replace('bahasa ', '')  // "Bhs. Inggris" → "inggris"
+        .replace(/\s+/g,'-');                           // spasi → tanda hubung
+
+      // Kata kunci mapel untuk pencocokan exam_id dan data.mapel
+      var mapelKeywords = _getMapelKeywords(guruMapel);
+
+      data = data.filter(function(v) {
+        // 1. Cek field data.mapel jika ada
+        if (v.data && v.data.mapel) {
+          return _mapelMatch(v.data.mapel, guruMapel);
+        }
+        // 2. Cek exam_id mengandung kata kunci mapel
+        var eid = (v.exam_id || '').toLowerCase();
+        return mapelKeywords.some(function(kw){ return eid.indexOf(kw) !== -1; });
+      });
     }
 
+    // Filter log yang sudah dihapus lokal (saat Supabase delete gagal)
+    var hidden = [];
+    try { hidden = JSON.parse(localStorage.getItem('hiddenViolations') || '[]'); } catch(e2){}
+    if (hidden.length > 0) {
+      data = data.filter(function(v){ return !hidden.includes(String(v.id)); });
+    }
+
+    // Tampilkan info filter mapel di header
+    var mapelInfoEl = document.getElementById('vio-mapel-info');
+    if (mapelInfoEl) {
+      mapelInfoEl.textContent = isAdmin
+        ? '👁️ Mode Admin — menampilkan semua mapel'
+        : '🔍 Filter: hanya mapel ' + guruMapel;
+    }
+
+    // Jika tidak ada data sama sekali — tampilkan kosong (BUKAN dummy)
     allViolations = data;
     renderViolations(data);
     updateViolationSummary(data);
     updateViolationBadge(data);
 
   } catch(e) {
-    // Offline - show demo data
-    var demo = getDemoViolations();
-    allViolations = demo;
-    renderViolations(demo);
-    updateViolationSummary(demo);
+    console.warn('loadViolations error:', e);
+    // Offline: tampilkan pesan kosong, JANGAN tampilkan demo data mapel lain
+    allViolations = [];
+    renderViolations([]);
+    updateViolationSummary([]);
   }
 
   if (loadEl) loadEl.style.display = 'none';
 }
 
-function getDemoViolations() {
-  return [
-    { id:1, event_type:'exam_cancelled', siswa_name:'Ahmad Fauzan',  exam_id:'ujian-mat-01', data:{ reason:'Tab/aplikasi ditinggalkan', count:1 }, created_at: new Date(Date.now()-5*60000).toISOString() },
-    { id:2, event_type:'violation',      siswa_name:'Budi Pratama',  exam_id:'ujian-mat-01', data:{ reason:'Fokus berpindah dari ujian', count:1 }, created_at: new Date(Date.now()-12*60000).toISOString() },
-    { id:3, event_type:'exam_cancelled', siswa_name:'Rizky Andika',  exam_id:'ujian-mat-01', data:{ reason:'Keluar dari mode fullscreen', count:1 }, created_at: new Date(Date.now()-20*60000).toISOString() },
-    { id:4, event_type:'violation',      siswa_name:'Siti Rahayu',   exam_id:'ujian-mat-01', data:{ reason:'Tab/aplikasi ditinggalkan', count:1 }, created_at: new Date(Date.now()-35*60000).toISOString() },
-    { id:5, event_type:'exam_started',   siswa_name:'Dewi Lestari',  exam_id:'ujian-mat-01', data:{}, created_at: new Date(Date.now()-40*60000).toISOString() },
-    { id:6, event_type:'exam_cancelled', siswa_name:'Annisa Putri',  exam_id:'ujian-ipa-01', data:{ reason:'Tab/aplikasi ditinggalkan', count:1 }, created_at: new Date(Date.now()-2*3600000).toISOString() },
-  ];
+// Helper: dapatkan kata kunci mapel untuk pencocokan exam_id
+function _getMapelKeywords(mapel) {
+  if (!mapel) return [];
+  var m = mapel.toLowerCase();
+  var map = {
+    'matematika':      ['mat','matematika'],
+    'ipa':             ['ipa','sains','science'],
+    'ips':             ['ips','sosial'],
+    'bhs. indonesia':  ['bind','indonesia','ind'],
+    'bhs. inggris':    ['big','inggris','english','eng'],
+    'pkn':             ['pkn','pancasila','kewarganegaraan'],
+    'penjaskes':       ['penjas','pjok','olahraga'],
+    'seni budaya':     ['seni','budaya','arts'],
+    'tik':             ['tik','komputer','teknologi'],
+    'agama':           ['agama','pai','religion'],
+  };
+  for (var key in map) {
+    if (m.indexOf(key) !== -1 || key.indexOf(m) !== -1) return map[key];
+  }
+  // Fallback: gunakan kata pertama mapel
+  return [m.split(' ')[0].substring(0,4)];
+}
+
+// Helper: cocokkan mapel string
+function _mapelMatch(a, b) {
+  if (!a || !b) return false;
+  var al = a.toLowerCase().trim();
+  var bl = b.toLowerCase().trim();
+  if (al === bl) return true;
+  // Cek parsial (misal "Inggris" cocok dengan "Bhs. Inggris")
+  return al.indexOf(bl) !== -1 || bl.indexOf(al) !== -1 ||
+    _getMapelKeywords(b).some(function(kw){ return al.indexOf(kw) !== -1; });
 }
 
 function filterViolations(filter) {
@@ -4628,6 +4733,8 @@ function filterViolations(filter) {
     activeBtn.style.border = 'none';
   }
 
+  // allViolations sudah difilter by mapel di loadViolations
+  // di sini hanya filter by jenis event
   var filtered = filter === 'semua'
     ? allViolations
     : allViolations.filter(function(v){ return v.event_type === filter; });
@@ -4685,9 +4792,13 @@ function renderViolations(data) {
             '<div style="font-size:11px;font-weight:800;color:#374151;">📋 Alasan Pelanggaran:</div>' +
             '<div style="font-size:12px;font-weight:600;color:' + txtBadge + ';margin-top:3px;">' + reason + '</div>' +
           '</div>' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
             '<span style="font-size:10px;color:#94A3B8;font-weight:600;">🕐 ' + timeAgo + '</span>' +
-            '<button onclick="showVioDetail(\'' + v.id + '\')" style="padding:4px 12px;border-radius:8px;border:1.5px solid ' + stripColor + ';background:#fff;color:' + stripColor + ';font-family:\'Nunito\',sans-serif;font-size:11px;font-weight:800;cursor:pointer;">Detail →</button>' +
+            '<div style="display:flex;gap:6px;">' +
+              '<button onclick="izinkanRemidi(\'' + v.id + '\',\'' + (v.siswa_name||'').replace(/'/g,"\\'") + '\',\'' + (v.exam_id||'').replace(/'/g,"\\'") + '\')" style="padding:4px 10px;border-radius:8px;border:1.5px solid #059669;background:#F0FDF4;color:#059669;font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">🔓 Izinkan Remidi</button>' +
+              '<button onclick="hapusViolationLog(\'' + v.id + '\')" style="padding:4px 10px;border-radius:8px;border:1.5px solid #DC2626;background:#FEF2F2;color:#DC2626;font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">🗑️ Hapus</button>' +
+              '<button onclick="showVioDetail(\'' + v.id + '\')" style="padding:4px 10px;border-radius:8px;border:1.5px solid ' + stripColor + ';background:#fff;color:' + stripColor + ';font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">Detail →</button>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -4749,34 +4860,151 @@ function getTimeAgo(isoStr) {
   return Math.floor(diff/86400) + ' hari lalu';
 }
 
-// Auto-notify teacher when a violation happens during active exam
-function notifyTeacherViolation(siswaName, reason, type) {
-  // Update badge immediately
-  var badge = document.getElementById('vio-badge');
-  if (badge) {
-    var cur = parseInt(badge.textContent) || 0;
-    badge.textContent = cur + 1;
-    badge.style.display = 'flex';
-    // Flash animation
-    badge.style.animation = 'none';
-    setTimeout(function(){ badge.style.animation = ''; }, 100);
+// ════════════════════════════════════════════════════════
+// HAPUS LOG PELANGGARAN
+// ════════════════════════════════════════════════════════
+
+async function hapusViolationLog(id) {
+  if (!confirm('Hapus log pelanggaran ini secara permanen?')) return;
+
+  // Tampilkan loading
+  showToast('⏳ Menghapus...', '#DBEAFE', '#1E40AF');
+
+  var supabaseOk = false;
+  try {
+    // Hapus dari Supabase — HARUS async/await
+    var res = await fetch(SUPABASE_URL + '/rest/v1/exam_logs?id=eq.' + encodeURIComponent(id), {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json'
+      }
+    });
+    supabaseOk = (res.status === 200 || res.status === 204 || res.ok);
+  } catch(e) {
+    console.warn('Supabase delete error:', e);
   }
 
-  // Push to allViolations for immediate render
-  allViolations.unshift({
-    id: Date.now(),
-    event_type: type,
-    siswa_name: siswaName,
-    exam_id: examState.examId,
-    data: { reason: reason, count: examState.violations },
-    created_at: new Date().toISOString()
-  });
+  // Selalu hapus dari local array
+  allViolations = allViolations.filter(function(v){ return String(v.id) !== String(id); });
 
-  // If teacher is viewing pelanggaran tab, re-render
-  var panel = document.getElementById('tea-pelanggaran');
-  if (panel && panel.classList.contains('active')) {
+  // Simpan ke localStorage sebagai backup (untuk kasus offline/RLS error)
+  try {
+    var hidden = JSON.parse(localStorage.getItem('hiddenViolations') || '[]');
+    if (!hidden.includes(String(id))) hidden.push(String(id));
+    localStorage.setItem('hiddenViolations', JSON.stringify(hidden));
+  } catch(e){}
+
+  // Re-render
+  renderViolations(allViolations);
+  updateViolationSummary(allViolations);
+  updateViolationBadge(allViolations);
+
+  if (supabaseOk) {
+    showToast('✅ Log pelanggaran dihapus permanen!', '#D1FAE5', '#065F46');
+  } else {
+    showToast('🗑️ Dihapus dari tampilan. Pastikan RLS Supabase mengizinkan DELETE.', '#FEF3C7', '#92400E');
+  }
+}
+
+async function hapusSemuaViolation() {
+  if (!confirm('Hapus SEMUA log pelanggaran yang tampil?\nTindakan ini tidak bisa dibatalkan.')) return;
+  var ids = allViolations
+    .filter(function(v){ return v.event_type !== 'exam_started'; })
+    .map(function(v){ return v.id; });
+
+  if (ids.length === 0) { // Update hiddenViolations localStorage
+  try {
+    var allIds = allViolations.map(function(v){ return String(v.id); });
+    var existing = JSON.parse(localStorage.getItem('hiddenViolations') || '[]');
+    var merged = existing.concat(allIds.filter(function(id){ return !existing.includes(id); }));
+    localStorage.setItem('hiddenViolations', JSON.stringify(merged));
+  } catch(e){}
+  showToast('Tidak ada log untuk dihapus.', '#F8FAFC', '#64748B'); return; }
+
+  var berhasil = 0;
+  for (var i = 0; i < ids.length; i++) {
+    try {
+      await fetch(SUPABASE_URL + '/rest/v1/exam_logs?id=eq.' + encodeURIComponent(ids[i]), {
+        method: 'DELETE',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+      });
+      berhasil++;
+    } catch(e) { /* hapus lokal saja */ }
+  }
+  allViolations = allViolations.filter(function(v){ return v.event_type === 'exam_started'; });
+  renderViolations(allViolations);
+  updateViolationSummary(allViolations);
+  updateViolationBadge(allViolations);
+  showToast('🗑️ Semua log pelanggaran dihapus!', '#FEF3C7', '#92400E');
+}
+
+// ════════════════════════════════════════════════════════
+// IZINKAN REMIDI — Guru buka blokir NISN siswa
+// ════════════════════════════════════════════════════════
+
+async function izinkanRemidi(logId, siswaNama, examId) {
+  var nisn = prompt(
+    '🔓 IZINKAN REMIDI\n\n' +
+    'Siswa : ' + siswaNama + '\n' +
+    'Ujian : ' + examId + '\n\n' +
+    'Masukkan NISN siswa untuk membuka blokir:\n(Kosongkan jika tidak tahu NISN, akan dicari by nama)'
+  );
+  if (nisn === null) return; // user cancel
+
+  if (!confirm(
+    'Konfirmasi izinkan remidi:\n\n' +
+    '👤 Siswa : ' + siswaNama + '\n' +
+    '📝 Ujian : ' + examId + '\n\n' +
+    'Siswa akan bisa mengerjakan ujian ini sekali lagi.'
+  )) return;
+
+  try {
+    // 1. Hapus hasil ujian sebelumnya (buka blokir)
+    var delUrl = SUPABASE_URL + '/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId);
+    if (nisn && nisn.trim()) {
+      delUrl += '&siswa_nisn=eq.' + encodeURIComponent(nisn.trim());
+    } else {
+      delUrl += '&siswa_name=eq.' + encodeURIComponent(siswaNama);
+    }
+    await fetch(delUrl, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+
+    // 2. Juga hapus via nama jika NISN disertakan (double delete aman)
+    if (nisn && nisn.trim()) {
+      await fetch(SUPABASE_URL + '/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId) + '&siswa_name=eq.' + encodeURIComponent(siswaNama), {
+        method: 'DELETE',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+      });
+    }
+
+    // 3. Log aksi guru ke Supabase
+    await fetch(SUPABASE_URL + '/rest/v1/exam_logs', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({
+        event_type: 'retry_approved',
+        exam_id: examId,
+        siswa_name: siswaNama,
+        data: { message: 'Guru mengizinkan remidi via tab Pelanggaran', nisn: nisn || '-', approved_by: currentGuruNIP || 'admin' },
+        created_at: new Date().toISOString()
+      })
+    });
+
+    // 4. Hapus log pelanggaran terkait dari tampilan
+    allViolations = allViolations.filter(function(v){ return String(v.id) !== String(logId); });
     renderViolations(allViolations);
     updateViolationSummary(allViolations);
+    updateViolationBadge(allViolations);
+
+    showToast('✅ ' + siswaNama + ' diizinkan remidi! Blokir NISN dilepas.', '#D1FAE5', '#065F46');
+
+  } catch(e) {
+    console.error('izinkanRemidi error:', e);
+    showToast('⚠️ Gagal membuka blokir: ' + (e.message || 'Cek koneksi.'), '#FEE2E2', '#991B1B');
   }
 }
 
@@ -5958,6 +6186,13 @@ async function submitTugas() {
 var ujianDibuat = []; // List ujian yang sudah dibuat guru
 var soalTerpilih = []; // Soal yang dipilih untuk ujian ini
 
+function toggleAcakSoal(checkbox) {
+  var slider = document.getElementById('acak-slider');
+  var thumb  = document.getElementById('acak-thumb');
+  if (slider) slider.style.background = checkbox.checked ? '#059669' : '#CBD5E1';
+  if (thumb)  thumb.style.left = checkbox.checked ? '23px' : '3px';
+}
+
 // ── BUAT UJIAN: Langkah 1 — Isi info dasar ──
 function openBuatUjianModal() {
   // Reset
@@ -6547,20 +6782,24 @@ async function cekDuplikatUjian(judul, kelas) {
 // ════════════════════════════════════════════════════════
 async function cekSiswaUdahUjian(examId, siswaNama) {
   try {
-    // Cek exact match dan fuzzy match nama
-    var data = await sbFetch('/rest/v1/exam_results?exam_id=eq.' + examId + '&select=siswa_name,score,finished_at');
+    var nisn = '';
+    try { nisn = localStorage.getItem('stuNisn') || ''; } catch(e2){}
+
+    // Cek berdasarkan NISN dulu (lebih akurat)
+    if (nisn) {
+      var dataNisn = await sbFetch('/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId) + '&siswa_nisn=eq.' + encodeURIComponent(nisn) + '&select=siswa_name,siswa_nisn,score,finished_at');
+      if (dataNisn && dataNisn.length > 0) return dataNisn[0];
+    }
+
+    // Fallback: cek berdasarkan nama
+    var data = await sbFetch('/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId) + '&select=siswa_name,siswa_nisn,score,finished_at');
     if (!data || data.length === 0) return null;
 
-    // Fuzzy match: cek apakah nama siswa yang login cocok dengan hasil ujian
     var namaParts = siswaNama.toLowerCase().split(' ').filter(function(p){ return p.length > 2; });
     var found = data.find(function(r) {
       var rNama = (r.siswa_name || '').toLowerCase();
-      // Exact match
       if (rNama === siswaNama.toLowerCase()) return true;
-      // Fuzzy: cek apakah ada bagian nama yang cocok
-      return namaParts.some(function(part) {
-        return rNama.indexOf(part) !== -1 || part.indexOf(rNama) !== -1;
-      });
+      return namaParts.some(function(part){ return rNama.indexOf(part) !== -1; });
     });
     return found || null;
   } catch(e) { return null; }
@@ -6590,6 +6829,26 @@ async function launchExamWithCheck(judul, durasi, examId) {
 }
 
 function showSudahUjianModal(examId, judul, siswaNama, hasilLama) {
+  // Cek apakah remidi diperbolehkan guru
+  isRemidiEnabled().then(function(enabled) {
+    var btn = document.getElementById('minta-remidi-btn');
+    if (btn) {
+      btn.style.display = enabled ? '' : 'none';
+      if (!enabled) {
+        var info = document.getElementById('sudah-ujian-modal');
+        if (info) {
+          var note = info.querySelector('.remidi-disabled-note');
+          if (!note) {
+            note = document.createElement('div');
+            note.className = 'remidi-disabled-note';
+            note.style.cssText = 'background:#FEF2F2;border-radius:10px;padding:10px;font-size:12px;color:#991B1B;text-align:center;margin-bottom:8px;';
+            note.textContent = '⛔ Remidi sedang dinonaktifkan oleh guru. Hubungi guru mapel untuk informasi lebih lanjut.';
+            btn.parentElement.insertBefore(note, btn);
+          }
+        }
+      }
+    }
+  });
   var modal = document.getElementById('sudah-ujian-modal');
   if (!modal) return;
 
@@ -7794,6 +8053,7 @@ function restoreSession() {
         if (teaTabIdx >= 0 && teaNavs[teaTabIdx]) teaNavs[teaTabIdx].classList.add('active-tea');
 
         loadAllDataOnLogin(); renderUjianHistory(); loadTugasGuru();
+        initRemidiToggle();
         startNotifPolling(); updateTeacherStats();
         loadSiswaNyata(); loadBankSoalFromSupabase();
         loadViolations(); startRetryPolling();
@@ -9005,6 +9265,137 @@ async function simpanEditUjian() {
 (function() {
   var _origLoad = typeof loadMateriGuru === 'function' ? loadMateriGuru : null;
 })();
+
+
+// ══════════════════════════════════════════════
+// HAPUS LOG PELANGGARAN
+// ══════════════════════════════════════════════
+async function hapusLogPelanggaran(logId) {
+  if (!confirm('Hapus log pelanggaran ini secara permanen?')) return;
+
+  var deleted = false;
+
+  // Coba hapus dari Supabase dengan berbagai format ID
+  try {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/exam_logs?id=eq.' + encodeURIComponent(logId), {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_ANON,
+        'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation'
+      }
+    });
+    if (res.ok) {
+      deleted = true;
+    } else {
+      // Coba dengan integer id (untuk data lokal yang pakai Date.now())
+      var resInt = await fetch(SUPABASE_URL + '/rest/v1/exam_logs?id=eq.' + logId, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        }
+      });
+      if (resInt.ok) deleted = true;
+    }
+  } catch(e) {
+    console.warn('Supabase DELETE error:', e);
+  }
+
+  // Hapus dari local array
+  allViolations = allViolations.filter(function(v){
+    return String(v.id) !== String(logId);
+  });
+
+  // Re-render
+  renderViolations(allViolations);
+  updateViolationSummary(allViolations);
+  var badge = document.getElementById('vio-badge');
+  if (badge) {
+    var remaining = allViolations.filter(function(v){ return v.event_type !== 'exam_started'; }).length;
+    if (remaining > 0) { badge.textContent = remaining; badge.style.display = 'flex'; }
+    else badge.style.display = 'none';
+  }
+
+  if (deleted) {
+    showToast('✅ Log pelanggaran dihapus permanen dari database!', '#D1FAE5', '#065F46');
+  } else {
+    // Jika Supabase gagal, tandai sebagai hidden di localStorage
+    try {
+      var hidden = JSON.parse(localStorage.getItem('hiddenViolations') || '[]');
+      if (!hidden.includes(String(logId))) hidden.push(String(logId));
+      localStorage.setItem('hiddenViolations', JSON.stringify(hidden));
+    } catch(e){}
+    showToast('⚠️ Dihapus dari tampilan. Cek koneksi/RLS Supabase untuk hapus permanen.', '#FEF3C7', '#92400E');
+  }
+}
+
+
+// ══════════════════════════════════════════════
+// REMIDI TOGGLE — Guru ON/OFF
+// ══════════════════════════════════════════════
+var remidiGlobalEnabled = true; // default: aktif
+
+function initRemidiToggle() {
+  try {
+    var saved = localStorage.getItem('remidiEnabled');
+    if (saved !== null) remidiGlobalEnabled = (saved === 'true');
+  } catch(e){}
+  updateRemidiToggleUI();
+}
+
+function toggleRemidiGlobal() {
+  remidiGlobalEnabled = !remidiGlobalEnabled;
+  try { localStorage.setItem('remidiEnabled', String(remidiGlobalEnabled)); } catch(e){}
+  updateRemidiToggleUI();
+  // Sync ke Supabase app_settings
+  try {
+    sbFetch('/rest/v1/app_settings', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON,
+        'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ key: 'remidi_enabled', value: String(remidiGlobalEnabled), updated_at: new Date().toISOString() })
+    });
+  } catch(e){}
+  showToast(
+    remidiGlobalEnabled ? '🟢 Remidi diaktifkan! Siswa bisa minta izin ujian ulang.' : '🔴 Remidi dinonaktifkan! Tombol remidi disembunyikan dari siswa.',
+    remidiGlobalEnabled ? '#D1FAE5' : '#FEE2E2',
+    remidiGlobalEnabled ? '#065F46' : '#991B1B'
+  );
+}
+
+function updateRemidiToggleUI() {
+  var btn  = document.getElementById('remidi-toggle-btn');
+  var text = document.getElementById('remidi-status-text');
+  if (btn) {
+    if (remidiGlobalEnabled) {
+      btn.textContent = '🟢 Aktif';
+      btn.style.background = '#D1FAE5';
+      btn.style.color = '#065F46';
+    } else {
+      btn.textContent = '🔴 Nonaktif';
+      btn.style.background = '#FEE2E2';
+      btn.style.color = '#991B1B';
+    }
+  }
+  if (text) {
+    text.textContent = remidiGlobalEnabled
+      ? 'Siswa dapat meminta izin remidi lewat aplikasi'
+      : 'Remidi dinonaktifkan — siswa tidak bisa minta izin';
+  }
+}
+
+// Siswa: cek apakah remidi diperbolehkan
+async function isRemidiEnabled() {
+  try {
+    var data = await sbFetch('/rest/v1/app_settings?key=eq.remidi_enabled&select=value');
+    if (data && data.length > 0) return data[0].value === 'true';
+  } catch(e){}
+  return true; // default aktif
+}
 
 </script>
 </body>
