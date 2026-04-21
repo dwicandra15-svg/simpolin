@@ -2382,7 +2382,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 <div class="logo-modal-overlay" id="nilai-tugas-modal" onclick="closeNilaiTugasModal(event)">
   <div class="logo-modal-box" style="max-height:85vh;overflow-y:auto;">
     <h3>📊 Nilai Tugas Siswa</h3>
-    <div id="nilai-tugas-judul" style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;"></div>
+    <div id="nilai-tugas-judul" style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:4px;"></div>
+    <div style="background:#FEF3C7;border:1px solid #FDE68A;border-radius:8px;padding:7px 10px;margin-bottom:12px;font-size:11px;color:#92400E;font-weight:600;">
+      ⚠️ File dengan label <strong>"Kumpulkan ulang"</strong> = data lama sebelum update. Klik 🗑️ untuk hapus, minta siswa kumpulkan ulang.
+    </div>
     <div id="nilai-siswa-list" style="margin-bottom:14px;"></div>
     <div style="display:flex;gap:8px;">
       <button class="modal-cancel" onclick="closeNilaiTugasModal()">Tutup</button>
@@ -2395,11 +2398,15 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
   <div class="logo-modal-box">
     <h3>📤 Kumpulkan Tugas</h3>
     <div id="kumpul-tugas-judul" style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;"></div>
-    <div style="border:2px dashed #2563EB;border-radius:12px;padding:20px;text-align:center;background:#EFF6FF;cursor:pointer;margin-bottom:12px;" onclick="triggerFileKumpul()">
-      <div style="font-size:28px;margin-bottom:6px;">📎</div>
-      <div style="font-size:13px;font-weight:800;color:#1E40AF;">Ketuk untuk pilih file</div>
-      <div id="kumpul-file-name" style="font-size:11px;color:#64748B;font-weight:600;margin-top:4px;">PDF, DOC, JPG, PNG • Max 5MB</div>
+    <!-- File upload area -->
+    <div style="border:2px dashed #2563EB;border-radius:12px;padding:16px;text-align:center;background:#EFF6FF;cursor:pointer;margin-bottom:8px;" onclick="triggerFileKumpul()">
+      <div style="font-size:26px;margin-bottom:4px;">📎</div>
+      <div style="font-size:13px;font-weight:800;color:#1E40AF;">Ketuk untuk tambah file</div>
+      <div style="font-size:11px;color:#64748B;font-weight:600;margin-top:2px;">PDF, DOC, JPG, PNG, XLSX • Max 5MB/file</div>
     </div>
+    <!-- Daftar file yang sudah dipilih -->
+    <div id="kumpul-file-list" style="margin-bottom:10px;"></div>
+    <div id="kumpul-file-count" style="font-size:11px;color:#7C3AED;font-weight:800;margin-bottom:8px;display:none;">📂 <span id="kumpul-file-count-num">0</span> file siap dikirim</div>
     <div class="s-field">
       <label>CATATAN (opsional)</label>
       <textarea id="kumpul-komentar" rows="2" placeholder="Tulis catatan untuk guru..." style="width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);background:#F8FAFC;font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;color:var(--text);outline:none;resize:none;"></textarea>
@@ -4018,6 +4025,9 @@ function showAdminReset() { switchAdmTab('reset', null); }
 
 // ════════════════════════════════════════════════
 // SUPABASE CONFIG
+// ════════════════════════════════════════════════
+// ⚠️ MIGRASI DB (jalankan sekali di Supabase SQL Editor):
+// ALTER TABLE tugas_submit ADD COLUMN IF NOT EXISTS files_json text;
 // ════════════════════════════════════════════════
 const SUPABASE_URL  = 'https://ibejrweswmmjsevffpzm.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliZWpyd2Vzd21tanNldmZmcHptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyODk0OTMsImV4cCI6MjA4OTg2NTQ5M30.0Bs0UjHPufAg3Yt9O1Q1vj8kR8pHBwkGbIy_ebs861A';
@@ -6094,12 +6104,9 @@ async function hapusSoal(id) {
 // ════════════════════════════════════════════════
 // NILAI TUGAS — Guru bisa nilai langsung
 // ════════════════════════════════════════════════
-function openNilaiTugasModal(tugasJudul) {
-  var modal = document.getElementById('nilai-tugas-modal');
-  if (!modal) return;
-  document.getElementById('nilai-tugas-judul').textContent = tugasJudul || 'Tugas';
-  modal.classList.add('open');
-  loadSubmittedTugas();
+function openNilaiTugasModal(tugasId, tugasJudul) {
+  // Diteruskan ke fungsi lengkap di bawah
+  _openNilaiTugasModalFull(tugasId, tugasJudul);
 }
 
 function closeNilaiTugasModal(e) {
@@ -6108,14 +6115,7 @@ function closeNilaiTugasModal(e) {
 }
 
 async function loadSubmittedTugas() {
-  // Demo data - in production load from Supabase tugas_submit
-  var demoData = [
-    { nama:'Ahmad Fauzan', kelas:'9A', status:'submitted', nilai:null },
-    { nama:'Siti Rahayu', kelas:'9B', status:'submitted', nilai:null },
-    { nama:'Budi Pratama', kelas:'9A', status:'submitted', nilai:85 },
-    { nama:'Dewi Lestari', kelas:'9C', status:'belum', nilai:null },
-  ];
-  renderNilaiList(demoData);
+  // Legacy stub — tidak dipakai lagi, semua ditangani openNilaiTugasModal
 }
 
 function renderNilaiList(data) {
@@ -6163,45 +6163,107 @@ async function simpanSemuaNilai() {
 // ════════════════════════════════════════════════
 // KUMPUL TUGAS — Siswa upload jawaban
 // ════════════════════════════════════════════════
-function openKumpulTugasModal(tugasJudul) {
-  var modal = document.getElementById('kumpul-tugas-modal');
-  if (!modal) return;
-  document.getElementById('kumpul-tugas-judul').textContent = tugasJudul || 'Tugas';
-  modal.classList.add('open');
-}
-
 function closeKumpulTugasModal(e) {
   var modal = document.getElementById('kumpul-tugas-modal');
   if (!e || e.target === modal) modal.classList.remove('open');
 }
 
+// ── Multi-file: array file yang sudah dipilih ──
+window._kumpulFiles = []; // array of { name, type, size, base64 }
+
+function _renderKumpulFileList() {
+  var listEl = document.getElementById('kumpul-file-list');
+  var countEl = document.getElementById('kumpul-file-count');
+  var countNum = document.getElementById('kumpul-file-count-num');
+  if (!listEl) return;
+  var files = window._kumpulFiles || [];
+  if (files.length === 0) {
+    listEl.innerHTML = '';
+    if (countEl) countEl.style.display = 'none';
+    return;
+  }
+  if (countEl) { countEl.style.display = 'block'; }
+  if (countNum) countNum.textContent = files.length;
+  listEl.innerHTML = files.map(function(f, i) {
+    var icon = '📄';
+    if (f.type.startsWith('image/')) icon = '🖼️';
+    else if (f.type.includes('pdf')) icon = '📕';
+    else if (f.type.includes('word') || f.name.endsWith('.docx')) icon = '📝';
+    else if (f.type.includes('sheet') || f.name.endsWith('.xlsx')) icon = '📊';
+    else if (f.type.includes('video')) icon = '🎬';
+    var sizeKB = (f.size / 1024).toFixed(0);
+    return '<div style="display:flex;align-items:center;gap:8px;background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:8px;padding:7px 10px;margin-bottom:5px;">'
+      + '<span style="font-size:18px;">'+icon+'</span>'
+      + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:12px;font-weight:800;color:#065F46;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+f.name+'</div>'
+        + '<div style="font-size:10px;color:#64748B;font-weight:600;">'+sizeKB+' KB</div>'
+      + '</div>'
+      + '<button onclick="hapusFileKumpul('+i+')" style="padding:3px 8px;border-radius:6px;border:none;background:#FEE2E2;color:#991B1B;font-size:10px;font-weight:800;cursor:pointer;flex-shrink:0;">✕</button>'
+    + '</div>';
+  }).join('');
+}
+
+function hapusFileKumpul(idx) {
+  if (window._kumpulFiles) window._kumpulFiles.splice(idx, 1);
+  _renderKumpulFileList();
+}
+
 function triggerFileKumpul() {
   var input = document.createElement('input');
   input.type = 'file';
-  input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png';
+  input.accept = '.pdf,.doc,.docx,.jpg,.jpeg,.png,.mp4,.xlsx,.xls';
+  input.multiple = true;
   input.onchange = function(e) {
-    var file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('⚠️ Ukuran file max 5MB!', '#FEE2E2', '#991B1B');
-      return;
+    var files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    // Batasi total file
+    var currentCount = (window._kumpulFiles || []).length;
+    if (currentCount + files.length > 5) {
+      showToast('⚠️ Maksimal 5 file per pengumpulan!', '#FEE2E2', '#991B1B');
+      files = files.slice(0, 5 - currentCount);
     }
-    document.getElementById('kumpul-file-name').textContent = '📎 ' + file.name;
-    document.getElementById('kumpul-file-name').style.color = '#059669';
-    window._kumpulFile = file;
+    var toProcess = files.length;
+    if (toProcess === 0) return;
+    files.forEach(function(file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('⚠️ File "'+file.name+'" melebihi 5MB, dilewati.', '#FEE2E2', '#991B1B');
+        toProcess--;
+        if (toProcess === 0) _renderKumpulFileList();
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        if (!window._kumpulFiles) window._kumpulFiles = [];
+        window._kumpulFiles.push({ name: file.name, type: file.type, size: file.size, base64: ev.target.result });
+        toProcess--;
+        if (toProcess === 0) _renderKumpulFileList();
+        // Kompatibilitas: set _kumpulFile ke file pertama
+        if (window._kumpulFiles.length === 1) window._kumpulFile = window._kumpulFiles[0];
+      };
+      reader.readAsDataURL(file);
+    });
   };
   input.click();
 }
 
 async function submitTugas() {
-  var komentar = document.getElementById('kumpul-komentar').value.trim();
-  if (!window._kumpulFile) {
-    showToast('⚠️ Pilih file terlebih dahulu!', '#FEE2E2', '#991B1B');
+  // Cek apakah ada file yang dipilih
+  var files = window._kumpulFiles || [];
+  if (files.length === 0) {
+    // Fallback ke _kumpulFile lama
+    if (!window._kumpulFile || !window._kumpulFile.base64) {
+      showToast('⚠️ Pilih minimal 1 file terlebih dahulu!', '#FEE2E2', '#991B1B');
+      return;
+    }
+    files = [window._kumpulFile];
+  }
+  // Pastikan semua file sudah ter-encode
+  var allReady = files.every(function(f){ return f.base64 && f.base64.startsWith('data:'); });
+  if (!allReady) {
+    showToast('⚠️ File belum selesai diproses. Tunggu sebentar.', '#FEE2E2', '#991B1B');
     return;
   }
-  showToast('✅ Tugas berhasil dikumpulkan!', '#D1FAE5', '#065F46');
-  document.getElementById('kumpul-tugas-modal').classList.remove('open');
-  window._kumpulFile = null;
+  await _doSubmitTugas();
 }
 
 // ════════════════════════════════════════════════════════
@@ -7580,45 +7642,237 @@ async function hapusTugas(tugasId) {
 }
 
 // ── NILAI TUGAS SISWA — Guru ──
-async function openNilaiTugasModal(tugasId, tugasJudul) {
+async function _openNilaiTugasModalFull(tugasId, tugasJudul) {
   var modal = document.getElementById('nilai-tugas-modal');
   if (!modal) return;
   document.getElementById('nilai-tugas-judul').textContent = tugasJudul || 'Tugas';
+  window._currentNilaiTugasId = tugasId; // simpan untuk refresh
   modal.classList.add('open');
 
-  // Load pengumpulan dari Supabase
   var listEl = document.getElementById('nilai-siswa-list');
   listEl.innerHTML = '<div style="text-align:center;padding:14px;color:#64748B;font-size:12px;">⏳ Memuat data...</div>';
 
   try {
-    var data = await sbFetch('/rest/v1/tugas_submit?tugas_id=eq.'+tugasId+'&select=*,siswa:siswa_id(nama,kelas,nisn)');
-    if (!data || data.length === 0) {
+    var rawData = await sbFetch('/rest/v1/tugas_submit?tugas_id=eq.'+encodeURIComponent(tugasId)+'&select=*&order=submitted_at.desc');
+    if (!rawData || rawData.length === 0) {
       listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;font-weight:600;">Belum ada siswa yang mengumpulkan tugas ini.</div>';
       return;
     }
+    // ── Deduplikasi: ambil hanya 1 baris terbaru per siswa_nisn ──
+    // (bisa ada duplikat dari submit berulang di versi lama)
+    var seenNisn = {};
+    var data = rawData.filter(function(s) {
+      var key = (s.siswa_nisn || '') + '|' + (s.siswa_nama || '');
+      if (seenNisn[key]) return false; // sudah ada yang lebih baru (order desc)
+      seenNisn[key] = true;
+      return true;
+    });
+    // Jika ada duplikat, auto-hapus baris lama di background
+    if (rawData.length > data.length) {
+      var keepIds = data.map(function(s){ return s.id; });
+      var dupIds  = rawData.filter(function(s){ return keepIds.indexOf(s.id) === -1; }).map(function(s){ return s.id; });
+      dupIds.forEach(function(did) {
+        fetch(SUPABASE_URL + '/rest/v1/tugas_submit?id=eq.' + encodeURIComponent(did), {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+        }).catch(function(){});
+      });
+    }
     tugasSubmitList = data;
     listEl.innerHTML = data.map(function(s, i) {
-      var siswaNama = (s.siswa && s.siswa.nama) ? s.siswa.nama : (s.siswa_nama || 'Siswa '+i);
-      var siswaKelas = (s.siswa && s.siswa.kelas) ? s.siswa.kelas : '-';
+      var siswaNama  = s.siswa_nama || ('Siswa ' + (i+1));
+      var siswaKelas = s.siswa_kelas || '-';
       var bg = i%2===0 ? '#F8FAFC' : '#fff';
-      return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+bg+';border-radius:10px;margin-bottom:6px;border:1.5px solid #E2E8F0;">'
-        + '<div style="flex:1;">'
-          + '<div style="font-size:13px;font-weight:800;color:#1E293B;">'+siswaNama+'</div>'
-          + '<div style="font-size:11px;color:#64748B;font-weight:600;">'+siswaKelas+' • '+(s.status==='submitted'?'✅ Terkumpul':'⏳ Pending')+'</div>'
-          + (s.file_url ? '<a href="'+s.file_url+'" target="_blank" style="font-size:11px;color:#2563EB;font-weight:700;text-decoration:none;">📎 Lihat File</a>' : '')
-          + (s.komentar ? '<div style="font-size:11px;color:#64748B;margin-top:2px;">💬 '+s.komentar+'</div>' : '')
-        + '</div>'
-        + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
-          + '<input type="number" min="0" max="100" value="'+(s.nilai||'')+'" placeholder="0-100" data-submit-id="'+s.id+'" '
-            + 'style="width:70px;padding:6px 8px;border-radius:8px;border:1.5px solid #E2E8F0;font-family:\'Nunito\',sans-serif;font-size:13px;font-weight:700;text-align:center;outline:none;" '
-            + 'oninput="previewNilai(this)">'
-          + (s.nilai ? '<span style="font-size:10px;color:#059669;font-weight:800;">✅ Sudah dinilai</span>' : '<span style="font-size:10px;color:#F59E0B;font-weight:800;">⏳ Belum</span>')
+
+      // Tentukan tombol lihat file — support multi-file (files_json) & single file
+      var fileBtn = '';
+      var fileData = s.file_data || s.file_url || '';
+      var fileName = s.file_name || 'file';
+      var fileType = s.file_type || '';
+
+      // ── Cek multi-file (files_json) ──
+      var filesArr = [];
+      try {
+        if (s.files_json) {
+          var parsed = typeof s.files_json === 'string' ? JSON.parse(s.files_json) : s.files_json;
+          if (Array.isArray(parsed) && parsed.length > 0) filesArr = parsed;
+        }
+      } catch(e2) {}
+
+      function _buildFileCard(fData, fName, fType, fId, idx) {
+        var safeIdx = (idx !== undefined) ? idx : '';
+        if (fData && fData.startsWith('data:')) {
+          var isImg = fType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(fName);
+          if (isImg) {
+            return '<div style="margin-bottom:6px;">'
+              + '<img src="'+fData+'" alt="'+fName+'" style="max-width:120px;max-height:80px;border-radius:8px;border:1.5px solid #E2E8F0;cursor:pointer;display:block;margin-bottom:3px;" onclick="bukaFileArr(\''+fId+'\','+safeIdx+')" title="Klik untuk lihat penuh">'
+              + '<div style="display:flex;gap:8px;">'
+                + '<a onclick="bukaFileArr(\''+fId+'\','+safeIdx+')" style="font-size:11px;color:#2563EB;font-weight:700;cursor:pointer;">🔍 Buka</a>'
+                + '<a onclick="downloadFileArr(\''+fId+'\','+safeIdx+')" style="font-size:11px;color:#059669;font-weight:700;cursor:pointer;">📥 Unduh</a>'
+              + '</div></div>';
+          } else {
+            var fIcon = fType.includes('pdf') ? '📕' : fType.includes('word') ? '📝' : fType.includes('sheet') ? '📊' : fType.includes('video') ? '🎬' : '📄';
+            return '<div style="background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:8px;padding:6px 10px;margin-bottom:5px;">'
+              + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
+                + '<span style="font-size:15px;">'+fIcon+'</span>'
+                + '<span style="font-size:11px;color:#065F46;font-weight:700;word-break:break-all;">'+fName+'</span>'
+              + '</div>'
+              + '<div style="display:flex;gap:10px;">'
+                + '<a onclick="bukaFileArr(\''+fId+'\','+safeIdx+')" style="font-size:11px;color:#2563EB;font-weight:800;cursor:pointer;">🔍 Buka</a>'
+                + '<a onclick="downloadFileArr(\''+fId+'\','+safeIdx+')" style="font-size:11px;color:#059669;font-weight:800;cursor:pointer;">📥 Unduh</a>'
+              + '</div></div>';
+          }
+        } else if (fData && fData.startsWith('http')) {
+          return '<a href="'+fData+'" target="_blank" style="font-size:11px;color:#2563EB;font-weight:700;text-decoration:none;display:block;margin-bottom:4px;">📎 '+fName+'</a>';
+        } else if (fData && fData.length > 5) {
+          // ⚠️ Data lama — hanya nama file tersimpan, bukan base64
+          return '<div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:6px 10px;margin-bottom:5px;">'
+            + '<div style="font-size:11px;font-weight:800;color:#92400E;">📄 ' + fData + '</div>'
+            + '<div style="font-size:10px;color:#B45309;margin-top:2px;margin-bottom:5px;">File lama — tidak bisa dibuka. Minta siswa kumpulkan ulang.</div>'
+            + '<button onclick="hapusSubmitLama(\''+fId+'\')" style="padding:4px 10px;border-radius:6px;border:none;background:#FEE2E2;color:#991B1B;font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">🗑️ Hapus & Minta Kirim Ulang</button>'
+            + '</div>';
+        }
+        return '';
+      }
+
+      if (filesArr.length > 0) {
+        // Multi-file: tampilkan semua file dari files_json
+        fileBtn = '<div style="margin-top:6px;">'
+          + '<div style="font-size:10px;font-weight:800;color:#7C3AED;margin-bottom:4px;">📂 '+filesArr.length+' File Jawaban:</div>'
+          + filesArr.map(function(f, fi) {
+              return '<div style="margin-left:4px;">'
+                + '<div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:2px;">'+(fi+1)+'. '+f.name+'</div>'
+                + _buildFileCard(f.data, f.name, f.type, s.id+'_multi_'+fi, fi)
+              + '</div>';
+            }).join('')
+          + '</div>';
+      } else if (fileData && fileData.startsWith('data:')) {
+        // ✅ Single file base64 — bisa ditampilkan/didownload
+        fileBtn = '<div style="margin-top:6px;">' + _buildFileCard(fileData, fileName, fileType, s.id, '') + '</div>';
+      } else if (fileData && fileData.startsWith('http')) {
+        fileBtn = '<a href="'+fileData+'" target="_blank" style="font-size:11px;color:#2563EB;font-weight:700;text-decoration:none;display:block;margin-top:4px;">📎 '+fileName+'</a>';
+      } else if (fileData && fileData.length > 5) {
+        // ⚠️ Data lama — hanya nama file tersimpan (bukan base64, bukan URL)
+        fileBtn = '<div style="margin-top:6px;">' + _buildFileCard(fileData, fileName, fileType, s.id, '') + '</div>';
+      } else {
+        fileBtn = '<div style="font-size:11px;color:#94A3B8;margin-top:4px;">📄 Tidak ada file dilampirkan</div>';
+      }
+
+      return '<div style="padding:12px;background:'+bg+';border-radius:10px;margin-bottom:6px;border:1.5px solid #E2E8F0;">'
+        + '<div style="display:flex;align-items:flex-start;gap:10px;">'
+          + '<div style="flex:1;">'
+            + '<div style="font-size:13px;font-weight:800;color:#1E293B;">'+siswaNama+'</div>'
+            + '<div style="font-size:11px;color:#64748B;font-weight:600;margin-top:1px;">'+siswaKelas+' • '+(s.status==='submitted'||s.status==='dinilai'?'✅ Terkumpul':'⏳ Pending')+'</div>'
+            + fileBtn
+            + (s.komentar ? '<div style="font-size:11px;color:#64748B;margin-top:4px;background:#F1F5F9;padding:6px 8px;border-radius:6px;">💬 '+s.komentar+'</div>' : '')
+          + '</div>'
+          + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'
+            + '<input type="number" min="0" max="100" value="'+(s.nilai||'')+'" placeholder="0-100" data-submit-id="'+s.id+'" '
+              + 'style="width:70px;padding:6px 8px;border-radius:8px;border:1.5px solid #E2E8F0;font-family:\'Nunito\',sans-serif;font-size:13px;font-weight:700;text-align:center;outline:none;" '
+              + 'oninput="previewNilai(this)">'
+            + (s.nilai ? '<span style="font-size:10px;color:#059669;font-weight:800;">✅ Dinilai: '+s.nilai+'</span>' : '<span style="font-size:10px;color:#F59E0B;font-weight:800;">⏳ Belum</span>')
+          + '</div>'
         + '</div></div>';
     }).join('');
+
+    // Simpan data submit untuk akses fungsi buka/download
+    window._submitDataCache = {};
+    data.forEach(function(s){ window._submitDataCache[s.id] = s; });
+
   } catch(e) {
+    console.error('openNilaiTugasModal error:', e);
     listEl.innerHTML = '<div style="text-align:center;padding:14px;color:#991B1B;font-size:12px;">⚠️ Gagal memuat. Cek koneksi.</div>';
   }
 }
+
+// ── Helper: ambil data file (support multi-file & single file) ──
+function _getFileData(submitId, idx) {
+  // submitId bisa berupa "uuid_multi_N" untuk multi-file
+  var multiMatch = String(submitId).match(/^(.+)_multi_(\d+)$/);
+  if (multiMatch) {
+    var realId = multiMatch[1];
+    var fi = parseInt(multiMatch[2]);
+    var s2 = window._submitDataCache && window._submitDataCache[realId];
+    if (!s2) return null;
+    var arr = [];
+    try { arr = typeof s2.files_json === 'string' ? JSON.parse(s2.files_json) : (s2.files_json || []); } catch(e){}
+    if (arr[fi]) return { data: arr[fi].data, name: arr[fi].name, type: arr[fi].type };
+    return null;
+  }
+  var s = window._submitDataCache && window._submitDataCache[submitId];
+  if (!s) return null;
+  // Single file — cek files_json dulu jika idx diberikan
+  if (typeof idx === 'number') {
+    var arr2 = [];
+    try { arr2 = typeof s.files_json === 'string' ? JSON.parse(s.files_json) : (s.files_json || []); } catch(e){}
+    if (arr2[idx]) return { data: arr2[idx].data, name: arr2[idx].name, type: arr2[idx].type };
+  }
+  return { data: s.file_data || s.file_url || '', name: s.file_name || 'file', type: s.file_type || '' };
+}
+
+// Buka file base64 di tab/window baru (multi-file aware)
+function bukaFileArr(submitId, idx) {
+  var f = _getFileData(submitId, idx);
+  if (!f || !f.data) { showToast('⚠️ File tidak tersedia.', '#FEE2E2', '#991B1B'); return; }
+  if (!f.data.startsWith('data:') && !f.data.startsWith('http')) { showToast('⚠️ File tidak bisa dibuka.', '#FEE2E2', '#991B1B'); return; }
+  if (f.data.startsWith('http')) { window.open(f.data, '_blank'); return; }
+  var w = window.open();
+  if (!w) { showToast('⚠️ Pop-up diblokir browser. Coba lagi.', '#FEE2E2', '#991B1B'); return; }
+  if (f.type.startsWith('image/')) {
+    w.document.write('<html><body style="margin:0;background:#111;display:flex;justify-content:center;align-items:flex-start;"><img src="'+f.data+'" style="max-width:100%;height:auto;"></body></html>');
+  } else if (f.type.includes('pdf') || f.data.startsWith('data:application/pdf')) {
+    w.location.href = f.data;
+  } else {
+    downloadFileArr(submitId, idx);
+    w.close();
+  }
+}
+
+// Untuk kompatibilitas kode lama
+function bukaFileBase64(submitId) { bukaFileArr(submitId, ''); }
+
+// Hapus submission lama agar siswa bisa kirim ulang
+async function hapusSubmitLama(submitId) {
+  if (!confirm('Hapus pengumpulan ini?\nSiswa akan bisa mengumpulkan tugas lagi.')) return;
+  try {
+    var res = await fetch(SUPABASE_URL + '/rest/v1/tugas_submit?id=eq.' + encodeURIComponent(submitId), {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+    // Hapus dari cache lokal
+    if (window._submitDataCache) delete window._submitDataCache[submitId];
+    // Refresh tampilan
+    var card = document.querySelector('[data-submit-id="'+submitId+'"]');
+    if (card) {
+      var parentDiv = card.closest('div[style*="padding:12px"]');
+      if (parentDiv) parentDiv.remove();
+    }
+    showToast('🗑️ Dihapus! Siswa bisa mengumpulkan tugas lagi.', '#FEF3C7', '#92400E');
+    // Reload modal
+    var judulEl = document.getElementById('nilai-tugas-judul');
+    var tugasJudul = judulEl ? judulEl.textContent : '';
+    if (window._currentNilaiTugasId) openNilaiTugasModal(window._currentNilaiTugasId, tugasJudul);
+  } catch(e) {
+    showToast('⚠️ Gagal hapus. Cek koneksi.', '#FEE2E2', '#991B1B');
+  }
+}
+
+// Download file base64 (multi-file aware)
+function downloadFileArr(submitId, idx) {
+  var f = _getFileData(submitId, idx);
+  if (!f || !f.data) { showToast('⚠️ File tidak tersedia.', '#FEE2E2', '#991B1B'); return; }
+  if (!f.data.startsWith('data:')) { showToast('⚠️ File tidak bisa diunduh.', '#FEE2E2', '#991B1B'); return; }
+  var a = document.createElement('a');
+  a.href = f.data;
+  a.download = f.name || 'file-tugas';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  showToast('📥 File sedang diunduh...', '#D1FAE5', '#065F46');
+}
+
+// Untuk kompatibilitas kode lama
+function downloadFileBase64(submitId) { downloadFileArr(submitId, ''); }
 
 function previewNilai(input) {
   var v = parseInt(input.value);
@@ -7706,41 +7960,141 @@ async function loadTugasSiswa() {
   }
 }
 
-// ── Kumpul Tugas update — simpan ke Supabase ──
-async function submitTugas() {
+// ── Kumpul Tugas — simpan file base64 ke Supabase (multi-file + upsert) ──
+async function _doSubmitTugas() {
   var tugasId = window._currentTugasId;
-  if (!window._kumpulFile) { showToast('⚠️ Pilih file terlebih dahulu!', '#FEE2E2', '#991B1B'); return; }
+
+  // Kumpulkan semua file dari _kumpulFiles (multi) atau _kumpulFile (single lama)
+  var files = window._kumpulFiles || [];
+  if (files.length === 0 && window._kumpulFile && window._kumpulFile.base64) {
+    files = [window._kumpulFile];
+  }
+  if (files.length === 0) {
+    showToast('⚠️ Pilih minimal 1 file terlebih dahulu!', '#FEE2E2', '#991B1B');
+    return;
+  }
 
   var siswaNama = '';
+  var siswaNisn  = '';
+  var siswaKelas = '';
   try {
     var h = document.getElementById('stu-header-name');
     if (h) siswaNama = h.textContent.replace(/\s*—.*/,'').trim();
-  } catch(e){}
+    siswaNisn  = localStorage.getItem('stuNisn')  || '';
+    siswaKelas = localStorage.getItem('stuKelas') || '';
+  } catch(e2){}
 
   var btn = document.querySelector('#kumpul-tugas-modal .modal-save');
   if (btn) { btn.textContent = '⏳ Mengirim...'; btn.disabled = true; }
+  showToast('⏳ Mengirim file...', '#DBEAFE', '#1E40AF');
 
   try {
-    // Simpan ke Supabase (file sebagai nama saja, production pakai Supabase Storage)
-    await sbFetch('/rest/v1/tugas_submit', {
-      method: 'POST',
-      body: JSON.stringify({
-        tugas_id: tugasId || null,
-        siswa_nama: siswaNama,
-        file_url: window._kumpulFile.name,
-        komentar: document.getElementById('kumpul-komentar').value.trim(),
-        status: 'submitted',
-        submitted_at: new Date().toISOString()
-      })
-    });
+    // Data file: simpan file pertama di kolom utama + semua file di files_json
+    var firstFile = files[0];
+    var filesJson = JSON.stringify(files.map(function(f){ return { name: f.name, type: f.type, size: f.size, data: f.base64 }; }));
+
+    var payload = {
+      tugas_id:    tugasId || null,
+      siswa_nama:  siswaNama,
+      siswa_nisn:  siswaNisn,
+      siswa_kelas: siswaKelas,
+      file_data:   firstFile.base64,
+      file_name:   firstFile.name,
+      file_type:   firstFile.type,
+      files_json:  filesJson,
+      file_url:    null,
+      komentar:    document.getElementById('kumpul-komentar').value.trim(),
+      status:      'submitted',
+      submitted_at: new Date().toISOString()
+    };
+
+    // Cek apakah siswa sudah pernah submit tugas ini (upsert)
+    var existing = null;
+    try {
+      var checkRes = await fetch(
+        SUPABASE_URL + '/rest/v1/tugas_submit?tugas_id=eq.'+encodeURIComponent(tugasId)+'&siswa_nisn=eq.'+encodeURIComponent(siswaNisn)+'&select=id&limit=1',
+        { headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON } }
+      );
+      if (checkRes.ok) {
+        var checkData = await checkRes.json();
+        if (checkData && checkData.length > 0) existing = checkData[0].id;
+      }
+    } catch(e3){}
+
+    var res;
+    if (existing) {
+      // UPDATE — ganti data lama (hindari duplikasi)
+      res = await fetch(SUPABASE_URL + '/rest/v1/tugas_submit?id=eq.' + encodeURIComponent(existing), {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      // INSERT baru
+      res = await fetch(SUPABASE_URL + '/rest/v1/tugas_submit', {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON,
+          'Content-Type': 'application/json', 'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    if (!res.ok) {
+      var errTxt = await res.text();
+      // Jika kolom files_json / file_data belum ada di tabel, fallback tanpa kolom baru
+      // TAPI tetap simpan file_url (base64), file_name, file_type agar bisa dibaca guru
+      if (errTxt.includes('files_json') || errTxt.includes('column') || errTxt.includes('file_data')) {
+        var payload2 = {
+          tugas_id:     payload.tugas_id,
+          siswa_nama:   payload.siswa_nama,
+          siswa_nisn:   payload.siswa_nisn,
+          siswa_kelas:  payload.siswa_kelas,
+          file_url:     firstFile.base64,   // base64 disimpan di file_url
+          file_name:    firstFile.name,     // ← PENTING: nama file tetap disimpan
+          file_type:    firstFile.type,     // ← PENTING: tipe file tetap disimpan
+          komentar:     payload.komentar,
+          status:       payload.status,
+          submitted_at: payload.submitted_at
+        };
+        var method2 = existing ? 'PATCH' : 'POST';
+        var url2 = SUPABASE_URL + '/rest/v1/tugas_submit' + (existing ? '?id=eq.'+encodeURIComponent(existing) : '');
+        var res2 = await fetch(url2, {
+          method: method2,
+          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+          body: JSON.stringify(payload2)
+        });
+        if (!res2.ok) throw new Error('HTTP ' + res2.status);
+      } else {
+        throw new Error('HTTP ' + res.status + ': ' + errTxt);
+      }
+    }
+
     document.getElementById('kumpul-tugas-modal').classList.remove('open');
-    window._kumpulFile = null;
+    window._kumpulFiles    = [];
+    window._kumpulFile     = null;
     window._currentTugasId = null;
-    showToast('✅ Tugas berhasil dikumpulkan! Guru akan memberikan nilai.', '#D1FAE5', '#065F46');
+    var listEl = document.getElementById('kumpul-file-list');
+    if (listEl) listEl.innerHTML = '';
+    var countEl = document.getElementById('kumpul-file-count');
+    if (countEl) countEl.style.display = 'none';
+    document.getElementById('kumpul-komentar').value = '';
+    var msg = files.length > 1
+      ? '✅ '+files.length+' file berhasil dikumpulkan! Guru akan memberikan nilai.'
+      : '✅ Tugas berhasil dikumpulkan! Guru akan memberikan nilai.';
+    showToast(msg, '#D1FAE5', '#065F46');
     loadTugasSiswa();
+
   } catch(e) {
+    console.error('submitTugas error:', e);
     document.getElementById('kumpul-tugas-modal').classList.remove('open');
-    showToast('✅ Tugas dicatat (mode offline).', '#D1FAE5', '#065F46');
+    window._kumpulFiles = [];
+    window._kumpulFile  = null;
+    showToast('⚠️ Gagal kirim ke server. Coba lagi atau cek koneksi.', '#FEE2E2', '#991B1B');
   } finally {
     if (btn) { btn.textContent = '📤 Kumpulkan'; btn.disabled = false; }
   }
@@ -7824,10 +8178,14 @@ function openKumpulTugasModal(tugasJudul, tugasId) {
   if (!modal) return;
   document.getElementById('kumpul-tugas-judul').textContent = tugasJudul || 'Tugas';
   window._currentTugasId = tugasId || null;
-  document.getElementById('kumpul-file-name').textContent = 'PDF, DOC, JPG, PNG • Max 5MB';
-  document.getElementById('kumpul-file-name').style.color = '#64748B';
+  // Reset multi-file state
+  window._kumpulFiles = [];
+  window._kumpulFile  = null;
+  var listEl = document.getElementById('kumpul-file-list');
+  if (listEl) listEl.innerHTML = '';
+  var countEl = document.getElementById('kumpul-file-count');
+  if (countEl) countEl.style.display = 'none';
   document.getElementById('kumpul-komentar').value = '';
-  window._kumpulFile = null;
   modal.classList.add('open');
 }
 
