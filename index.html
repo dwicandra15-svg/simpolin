@@ -3254,9 +3254,9 @@ async function loadTeacherNotif() {
     }
   } catch(e) { console.warn('loadTeacherNotif exam_logs:', e); }
 
-  // 2. Tugas dikumpulkan siswa — filter by mapel
+  // 2. Tugas dikumpulkan siswa — filter by mapel (select kolom ringan saja, TANPA file_data/file_url)
   try {
-    var submitData = await sbFetch('/rest/v1/tugas_submit?select=*&order=submitted_at.desc&limit=20');
+    var submitData = await sbFetch('/rest/v1/tugas_submit?select=id,siswa_nama,siswa_kelas,tugas_id,mapel,status,submitted_at&order=submitted_at.desc&limit=30');
     if (submitData && submitData.length > 0) {
       if (!isAdmin && guruMapel) {
         submitData = submitData.filter(function(s){
