@@ -7646,116 +7646,78 @@ async function _openNilaiTugasModalFull(tugasId, tugasJudul) {
   var modal = document.getElementById('nilai-tugas-modal');
   if (!modal) return;
   document.getElementById('nilai-tugas-judul').textContent = tugasJudul || 'Tugas';
-  window._currentNilaiTugasId = tugasId; // simpan untuk refresh
+  window._currentNilaiTugasId = tugasId;
   modal.classList.add('open');
 
   var listEl = document.getElementById('nilai-siswa-list');
   listEl.innerHTML = '<div style="text-align:center;padding:14px;color:#64748B;font-size:12px;">⏳ Memuat data...</div>';
 
   try {
-    var rawData = await sbFetch('/rest/v1/tugas_submit?tugas_id=eq.'+encodeURIComponent(tugasId)+'&select=*&order=submitted_at.desc');
+    // ── PHASE 1: Ambil metadata saja — TANPA kolom file besar ──
+    // Ini mencegah timeout karena file_data/file_url/files_json bisa ratusan KB per baris
+    var metaCols = 'id,tugas_id,siswa_nama,siswa_kelas,siswa_nisn,file_name,file_type,komentar,status,nilai,submitted_at';
+    var rawData = await sbFetch('/rest/v1/tugas_submit?tugas_id=eq.'+encodeURIComponent(tugasId)+'&select='+metaCols+'&order=submitted_at.desc');
+
     if (!rawData || rawData.length === 0) {
       listEl.innerHTML = '<div style="text-align:center;padding:20px;color:#64748B;font-size:13px;font-weight:600;">Belum ada siswa yang mengumpulkan tugas ini.</div>';
       return;
     }
-    // ── Deduplikasi: ambil hanya 1 baris terbaru per siswa_nisn ──
-    // (bisa ada duplikat dari submit berulang di versi lama)
+
+    // ── Deduplikasi: ambil hanya 1 baris terbaru per siswa ──
     var seenNisn = {};
     var data = rawData.filter(function(s) {
       var key = (s.siswa_nisn || '') + '|' + (s.siswa_nama || '');
-      if (seenNisn[key]) return false; // sudah ada yang lebih baru (order desc)
+      if (seenNisn[key]) return false;
       seenNisn[key] = true;
       return true;
     });
-    // Jika ada duplikat, auto-hapus baris lama di background
+
+    // Auto-hapus duplikat lama di background
     if (rawData.length > data.length) {
       var keepIds = data.map(function(s){ return s.id; });
-      var dupIds  = rawData.filter(function(s){ return keepIds.indexOf(s.id) === -1; }).map(function(s){ return s.id; });
-      dupIds.forEach(function(did) {
-        fetch(SUPABASE_URL + '/rest/v1/tugas_submit?id=eq.' + encodeURIComponent(did), {
-          method: 'DELETE',
-          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
-        }).catch(function(){});
-      });
+      rawData.filter(function(s){ return keepIds.indexOf(s.id) === -1; })
+        .forEach(function(s) {
+          fetch(SUPABASE_URL + '/rest/v1/tugas_submit?id=eq.' + encodeURIComponent(s.id), {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+          }).catch(function(){});
+        });
     }
+
     tugasSubmitList = data;
+
+    // ── Simpan cache metadata (tanpa file data) ──
+    window._submitDataCache = {};
+    data.forEach(function(s){ window._submitDataCache[s.id] = s; });
+
+    // ── Render kartu siswa — file ditampilkan setelah klik tombol ──
     listEl.innerHTML = data.map(function(s, i) {
-      var siswaNama  = s.siswa_nama || ('Siswa ' + (i+1));
+      var siswaNama  = s.siswa_nama  || ('Siswa ' + (i+1));
       var siswaKelas = s.siswa_kelas || '-';
       var bg = i%2===0 ? '#F8FAFC' : '#fff';
+      var fileName   = s.file_name   || '';
+      var fileType   = s.file_type   || '';
 
-      // Tentukan tombol lihat file — support multi-file (files_json) & single file
-      var fileBtn = '';
-      var fileData = s.file_data || s.file_url || '';
-      var fileName = s.file_name || 'file';
-      var fileType = s.file_type || '';
-
-      // ── Cek multi-file (files_json) ──
-      var filesArr = [];
-      try {
-        if (s.files_json) {
-          var parsed = typeof s.files_json === 'string' ? JSON.parse(s.files_json) : s.files_json;
-          if (Array.isArray(parsed) && parsed.length > 0) filesArr = parsed;
-        }
-      } catch(e2) {}
-
-      function _buildFileCard(fData, fName, fType, fId, idx) {
-        var safeIdx = (idx !== undefined) ? idx : '';
-        if (fData && fData.startsWith('data:')) {
-          var isImg = fType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(fName);
-          if (isImg) {
-            return '<div style="margin-bottom:6px;">'
-              + '<img src="'+fData+'" alt="'+fName+'" style="max-width:120px;max-height:80px;border-radius:8px;border:1.5px solid #E2E8F0;cursor:pointer;display:block;margin-bottom:3px;" onclick="bukaFileArr(\''+fId+'\','+safeIdx+')" title="Klik untuk lihat penuh">'
-              + '<div style="display:flex;gap:8px;">'
-                + '<a onclick="bukaFileArr(\''+fId+'\','+safeIdx+')" style="font-size:11px;color:#2563EB;font-weight:700;cursor:pointer;">🔍 Buka</a>'
-                + '<a onclick="downloadFileArr(\''+fId+'\','+safeIdx+')" style="font-size:11px;color:#059669;font-weight:700;cursor:pointer;">📥 Unduh</a>'
-              + '</div></div>';
-          } else {
-            var fIcon = fType.includes('pdf') ? '📕' : fType.includes('word') ? '📝' : fType.includes('sheet') ? '📊' : fType.includes('video') ? '🎬' : '📄';
-            return '<div style="background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:8px;padding:6px 10px;margin-bottom:5px;">'
-              + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
-                + '<span style="font-size:15px;">'+fIcon+'</span>'
-                + '<span style="font-size:11px;color:#065F46;font-weight:700;word-break:break-all;">'+fName+'</span>'
-              + '</div>'
-              + '<div style="display:flex;gap:10px;">'
-                + '<a onclick="bukaFileArr(\''+fId+'\','+safeIdx+')" style="font-size:11px;color:#2563EB;font-weight:800;cursor:pointer;">🔍 Buka</a>'
-                + '<a onclick="downloadFileArr(\''+fId+'\','+safeIdx+')" style="font-size:11px;color:#059669;font-weight:800;cursor:pointer;">📥 Unduh</a>'
-              + '</div></div>';
-          }
-        } else if (fData && fData.startsWith('http')) {
-          return '<a href="'+fData+'" target="_blank" style="font-size:11px;color:#2563EB;font-weight:700;text-decoration:none;display:block;margin-bottom:4px;">📎 '+fName+'</a>';
-        } else if (fData && fData.length > 5) {
-          // ⚠️ Data lama — hanya nama file tersimpan, bukan base64
-          return '<div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:6px 10px;margin-bottom:5px;">'
-            + '<div style="font-size:11px;font-weight:800;color:#92400E;">📄 ' + fData + '</div>'
-            + '<div style="font-size:10px;color:#B45309;margin-top:2px;margin-bottom:5px;">File lama — tidak bisa dibuka. Minta siswa kumpulkan ulang.</div>'
-            + '<button onclick="hapusSubmitLama(\''+fId+'\')" style="padding:4px 10px;border-radius:6px;border:none;background:#FEE2E2;color:#991B1B;font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">🗑️ Hapus & Minta Kirim Ulang</button>'
-            + '</div>';
-        }
-        return '';
-      }
-
-      if (filesArr.length > 0) {
-        // Multi-file: tampilkan semua file dari files_json
-        fileBtn = '<div style="margin-top:6px;">'
-          + '<div style="font-size:10px;font-weight:800;color:#7C3AED;margin-bottom:4px;">📂 '+filesArr.length+' File Jawaban:</div>'
-          + filesArr.map(function(f, fi) {
-              return '<div style="margin-left:4px;">'
-                + '<div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:2px;">'+(fi+1)+'. '+f.name+'</div>'
-                + _buildFileCard(f.data, f.name, f.type, s.id+'_multi_'+fi, fi)
-              + '</div>';
-            }).join('')
+      // Tentukan info file (hanya nama — data belum diload)
+      var fileInfo = '';
+      if (fileName) {
+        var fIcon = fileType.includes('pdf') ? '📕'
+          : fileType.startsWith('image/') ? '🖼️'
+          : fileType.includes('word') ? '📝'
+          : fileType.includes('sheet') ? '📊'
+          : fileType.includes('video') ? '🎬' : '📄';
+        fileInfo = '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;background:#F0F9FF;border:1.5px solid #BAE6FD;border-radius:8px;padding:6px 10px;">'
+          + '<span style="font-size:16px;">'+fIcon+'</span>'
+          + '<div style="flex:1;min-width:0;">'
+            + '<div style="font-size:11px;font-weight:800;color:#0369A1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+fileName+'</div>'
+            + '<div style="font-size:10px;color:#64748B;margin-top:1px;">Klik untuk lihat file</div>'
+          + '</div>'
+          + '<button onclick="lihatFileSiswa(\''+s.id+'\')" '
+            + 'style="flex-shrink:0;padding:5px 10px;border-radius:7px;border:none;background:linear-gradient(90deg,#2563EB,#7C3AED);color:#fff;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;">'
+            + '🔍 Lihat</button>'
           + '</div>';
-      } else if (fileData && fileData.startsWith('data:')) {
-        // ✅ Single file base64 — bisa ditampilkan/didownload
-        fileBtn = '<div style="margin-top:6px;">' + _buildFileCard(fileData, fileName, fileType, s.id, '') + '</div>';
-      } else if (fileData && fileData.startsWith('http')) {
-        fileBtn = '<a href="'+fileData+'" target="_blank" style="font-size:11px;color:#2563EB;font-weight:700;text-decoration:none;display:block;margin-top:4px;">📎 '+fileName+'</a>';
-      } else if (fileData && fileData.length > 5) {
-        // ⚠️ Data lama — hanya nama file tersimpan (bukan base64, bukan URL)
-        fileBtn = '<div style="margin-top:6px;">' + _buildFileCard(fileData, fileName, fileType, s.id, '') + '</div>';
       } else {
-        fileBtn = '<div style="font-size:11px;color:#94A3B8;margin-top:4px;">📄 Tidak ada file dilampirkan</div>';
+        fileInfo = '<div id="file-area-'+s.id+'" style="margin-top:4px;font-size:11px;color:#94A3B8;">📄 Tidak ada file dilampirkan</div>';
       }
 
       return '<div style="padding:12px;background:'+bg+';border-radius:10px;margin-bottom:6px;border:1.5px solid #E2E8F0;">'
@@ -7763,7 +7725,7 @@ async function _openNilaiTugasModalFull(tugasId, tugasJudul) {
           + '<div style="flex:1;">'
             + '<div style="font-size:13px;font-weight:800;color:#1E293B;">'+siswaNama+'</div>'
             + '<div style="font-size:11px;color:#64748B;font-weight:600;margin-top:1px;">'+siswaKelas+' • '+(s.status==='submitted'||s.status==='dinilai'?'✅ Terkumpul':'⏳ Pending')+'</div>'
-            + fileBtn
+            + '<div id="file-area-'+s.id+'">'+fileInfo+'</div>'
             + (s.komentar ? '<div style="font-size:11px;color:#64748B;margin-top:4px;background:#F1F5F9;padding:6px 8px;border-radius:6px;">💬 '+s.komentar+'</div>' : '')
           + '</div>'
           + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'
@@ -7775,13 +7737,101 @@ async function _openNilaiTugasModalFull(tugasId, tugasJudul) {
         + '</div></div>';
     }).join('');
 
-    // Simpan data submit untuk akses fungsi buka/download
-    window._submitDataCache = {};
-    data.forEach(function(s){ window._submitDataCache[s.id] = s; });
-
   } catch(e) {
     console.error('openNilaiTugasModal error:', e);
     listEl.innerHTML = '<div style="text-align:center;padding:14px;color:#991B1B;font-size:12px;">⚠️ Gagal memuat. Cek koneksi.</div>';
+  }
+}
+
+// ── PHASE 2: Lazy load file data per siswa saat guru klik "Lihat" ──
+async function lihatFileSiswa(submitId) {
+  var areaEl = document.getElementById('file-area-'+submitId);
+  if (!areaEl) return;
+  areaEl.innerHTML = '<div style="font-size:11px;color:#64748B;padding:4px;">⏳ Memuat file...</div>';
+
+  try {
+    // Query hanya 1 baris, hanya kolom file — jauh lebih cepat
+    var res = await sbFetch('/rest/v1/tugas_submit?id=eq.'+encodeURIComponent(submitId)+'&select=id,file_data,file_url,file_name,file_type,files_json&limit=1');
+    if (!res || res.length === 0) { areaEl.innerHTML = '<div style="font-size:11px;color:#991B1B;">⚠️ Data file tidak ditemukan.</div>'; return; }
+
+    var s = res[0];
+    // Merge ke cache
+    if (window._submitDataCache && window._submitDataCache[submitId]) {
+      Object.assign(window._submitDataCache[submitId], s);
+    } else {
+      if (!window._submitDataCache) window._submitDataCache = {};
+      window._submitDataCache[submitId] = s;
+    }
+
+    var fileData  = s.file_data  || s.file_url  || '';
+    var fileName  = s.file_name  || 'file';
+    var fileType  = s.file_type  || '';
+
+    // Cek multi-file
+    var filesArr = [];
+    try {
+      if (s.files_json) {
+        var parsed = typeof s.files_json === 'string' ? JSON.parse(s.files_json) : s.files_json;
+        if (Array.isArray(parsed) && parsed.length > 0) filesArr = parsed;
+      }
+    } catch(e2){}
+
+    function _buildFileCard(fData, fName, fType, fId, idx) {
+      var safeIdx = (idx !== undefined && idx !== '') ? idx : '';
+      if (fData && fData.startsWith('data:')) {
+        var isImg = fType.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(fName);
+        if (isImg) {
+          return '<div style="margin-bottom:6px;">'
+            + '<img src="'+fData+'" alt="'+fName+'" style="max-width:120px;max-height:80px;border-radius:8px;border:1.5px solid #E2E8F0;cursor:pointer;display:block;margin-bottom:3px;" onclick="bukaFileArr(\''+fId+'\',\''+safeIdx+'\')" title="Klik untuk lihat penuh">'
+            + '<div style="display:flex;gap:8px;">'
+              + '<a onclick="bukaFileArr(\''+fId+'\',\''+safeIdx+'\')" style="font-size:11px;color:#2563EB;font-weight:700;cursor:pointer;">🔍 Buka</a>'
+              + '<a onclick="downloadFileArr(\''+fId+'\',\''+safeIdx+'\')" style="font-size:11px;color:#059669;font-weight:700;cursor:pointer;">📥 Unduh</a>'
+            + '</div></div>';
+        } else {
+          var fIcon = fType.includes('pdf') ? '📕' : fType.includes('word') ? '📝' : fType.includes('sheet') ? '📊' : fType.includes('video') ? '🎬' : '📄';
+          return '<div style="background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:8px;padding:6px 10px;margin-bottom:5px;">'
+            + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
+              + '<span style="font-size:15px;">'+fIcon+'</span>'
+              + '<span style="font-size:11px;color:#065F46;font-weight:700;word-break:break-all;">'+fName+'</span>'
+            + '</div>'
+            + '<div style="display:flex;gap:10px;">'
+              + '<a onclick="bukaFileArr(\''+fId+'\',\''+safeIdx+'\')" style="font-size:11px;color:#2563EB;font-weight:800;cursor:pointer;">🔍 Buka</a>'
+              + '<a onclick="downloadFileArr(\''+fId+'\',\''+safeIdx+'\')" style="font-size:11px;color:#059669;font-weight:800;cursor:pointer;">📥 Unduh</a>'
+            + '</div></div>';
+        }
+      } else if (fData && fData.startsWith('http')) {
+        return '<a href="'+fData+'" target="_blank" style="font-size:11px;color:#2563EB;font-weight:700;text-decoration:none;display:block;margin-bottom:4px;">📎 '+fName+'</a>';
+      } else if (fData && fData.length > 5) {
+        return '<div style="background:#FFFBEB;border:1.5px solid #FDE68A;border-radius:8px;padding:6px 10px;margin-bottom:5px;">'
+          + '<div style="font-size:11px;font-weight:800;color:#92400E;">📄 ' + fName + '</div>'
+          + '<div style="font-size:10px;color:#B45309;margin-top:2px;margin-bottom:5px;">File lama — tidak bisa dibuka. Minta siswa kumpulkan ulang.</div>'
+          + '<button onclick="hapusSubmitLama(\''+fId+'\')" style="padding:4px 10px;border-radius:6px;border:none;background:#FEE2E2;color:#991B1B;font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">🗑️ Hapus & Minta Kirim Ulang</button>'
+          + '</div>';
+      }
+      return '<div style="font-size:11px;color:#94A3B8;">📄 File kosong / tidak tersedia</div>';
+    }
+
+    var html = '';
+    if (filesArr.length > 0) {
+      html = '<div style="margin-top:4px;">'
+        + '<div style="font-size:10px;font-weight:800;color:#7C3AED;margin-bottom:4px;">📂 '+filesArr.length+' File Jawaban:</div>'
+        + filesArr.map(function(f, fi) {
+            return '<div style="margin-left:4px;">'
+              + '<div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:2px;">'+(fi+1)+'. '+f.name+'</div>'
+              + _buildFileCard(f.data, f.name, f.type, submitId+'_multi_'+fi, fi)
+            + '</div>';
+          }).join('')
+        + '</div>';
+    } else if (fileData) {
+      html = '<div style="margin-top:4px;">' + _buildFileCard(fileData, fileName, fileType, submitId, '') + '</div>';
+    } else {
+      html = '<div style="font-size:11px;color:#94A3B8;margin-top:4px;">📄 Tidak ada file dilampirkan</div>';
+    }
+    areaEl.innerHTML = html;
+
+  } catch(e) {
+    console.error('lihatFileSiswa error:', e);
+    areaEl.innerHTML = '<div style="font-size:11px;color:#991B1B;">⚠️ Gagal memuat file. Coba lagi.</div>';
   }
 }
 
