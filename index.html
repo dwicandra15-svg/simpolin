@@ -5933,6 +5933,12 @@ async function simpanSoal() {
   var bobot = parseInt((document.getElementById('soal-bobot') || {}).value) || 10;
   var type = _currentSoalType || 'pg';
 
+  // Untuk tipe Menjodohkan: pertanyaan diambil dari Kolom A (tidak wajib isi field pertanyaan)
+  if (type === 'match') {
+    var _a1 = (document.getElementById('match-a1')||{}).value.trim();
+    if (!pertanyaan) pertanyaan = _a1 || 'Jodohkan kolom A dengan kolom B';
+  }
+
   if (!pertanyaan) { showToast('⚠️ Pertanyaan wajib diisi!', '#FEE2E2', '#991B1B'); return; }
 
   var soalData = {
@@ -8438,6 +8444,42 @@ function updateSoalType(type) {
   // Tampilkan section yang dipilih
   var show = document.getElementById('soal-' + type + '-section');
   if (show) show.style.display = 'block';
+
+  // ── Kolom "PERTANYAAN / SOAL" ──
+  // Untuk Menjodohkan: soalnya ada di Kolom A → sembunyikan field pertanyaan
+  // Untuk B/S: pertanyaan tetap muncul (kalimat yang dinilai Benar/Salah)
+  var pertanyaanField = document.getElementById('soal-pertanyaan') 
+    ? document.getElementById('soal-pertanyaan').closest('.s-field') 
+    : null;
+  if (!pertanyaanField) {
+    // Fallback: cari parent div dari textarea
+    var ta = document.getElementById('soal-pertanyaan');
+    if (ta) pertanyaanField = ta.parentElement;
+  }
+  if (pertanyaanField) {
+    if (type === 'match') {
+      pertanyaanField.style.display = 'none';
+    } else {
+      pertanyaanField.style.display = '';
+      // Sesuaikan label placeholder berdasarkan tipe
+      var ta2 = document.getElementById('soal-pertanyaan');
+      if (ta2) {
+        if (type === 'tf') {
+          ta2.placeholder = 'Tulis pernyataan yang akan dinilai Benar/Salah...';
+          var lbl = pertanyaanField.querySelector('label');
+          if (lbl) lbl.innerHTML = 'PERNYATAAN <span style="color:#EF4444;">*</span>';
+        } else if (type === 'essay') {
+          ta2.placeholder = 'Tulis soal essay di sini...';
+          var lbl2 = pertanyaanField.querySelector('label');
+          if (lbl2) lbl2.innerHTML = 'PERTANYAAN / SOAL <span style="color:#EF4444;">*</span>';
+        } else {
+          ta2.placeholder = 'Tulis pertanyaan di sini...';
+          var lbl3 = pertanyaanField.querySelector('label');
+          if (lbl3) lbl3.innerHTML = 'PERTANYAAN / SOAL <span style="color:#EF4444;">*</span>';
+        }
+      }
+    }
+  }
 
   // Auto-set bobot berdasarkan tipe
   var bobotEl = document.getElementById('soal-bobot');
