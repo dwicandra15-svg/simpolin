@@ -2397,7 +2397,13 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 <div class="logo-modal-overlay" id="kumpul-tugas-modal" onclick="closeKumpulTugasModal(event)">
   <div class="logo-modal-box">
     <h3>📤 Kumpulkan Tugas</h3>
-    <div id="kumpul-tugas-judul" style="font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;"></div>
+    <div id="kumpul-tugas-judul" style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px;"></div>
+    <!-- Deskripsi tugas — ditampilkan agar siswa tahu instruksi -->
+    <div id="kumpul-tugas-deskripsi" style="display:none;background:#EFF6FF;border:1.5px solid #BFDBFE;border-radius:10px;padding:10px 12px;margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:800;color:#1D4ED8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">📋 Instruksi Tugas</div>
+      <div id="kumpul-tugas-deskripsi-text" style="font-size:12px;color:#1E40AF;font-weight:600;line-height:1.6;white-space:pre-wrap;"></div>
+    </div>
+    <div id="kumpul-tugas-deadline" style="display:none;font-size:11px;color:#DC2626;font-weight:700;margin-bottom:10px;"></div>
     <!-- File upload area -->
     <div style="border:2px dashed #2563EB;border-radius:12px;padding:16px;text-align:center;background:#EFF6FF;cursor:pointer;margin-bottom:8px;" onclick="triggerFileKumpul()">
       <div style="font-size:26px;margin-bottom:4px;">📎</div>
@@ -6540,19 +6546,40 @@ function renderUjianSiswa() {
       : isAkan ? '<button class="qi-btn qi-btn-lock">🔒 Belum Dibuka</button>'
       : '<button class="qi-btn qi-btn-result">📊 Lihat Hasil</button>';
 
-    var mulaiStr = u.mulai_at ? new Date(u.mulai_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '-';
+    var mulaiStr   = u.mulai_at   ? new Date(u.mulai_at).toLocaleString('id-ID',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-';
+    var selesaiStr = u.selesai_at ? new Date(u.selesai_at).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '-';
+
+    // Deskripsi / keterangan ujian
+    var deskripsiHtml = '';
+    if (u.deskripsi || u.keterangan || u.petunjuk) {
+      var isiDesk = u.deskripsi || u.keterangan || u.petunjuk || '';
+      deskripsiHtml = '<div style="background:#F0FDF4;border:1.5px solid #A7F3D0;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:12px;color:#065F46;font-weight:600;line-height:1.6;white-space:pre-wrap;">'
+        + '<div style="font-size:10px;font-weight:800;color:#059669;margin-bottom:3px;text-transform:uppercase;">📋 Petunjuk Ujian</div>'
+        + isiDesk
+        + '</div>';
+    }
+
+    // Info waktu pelaksanaan
+    var waktuHtml = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;">'
+      + '<span style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#1D4ED8;">📅 Mulai: '+mulaiStr+'</span>'
+      + '<span style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;color:#C2410C;">🏁 Selesai: '+selesaiStr+'</span>'
+      + '</div>';
 
     return '<div class="quiz-item">' +
       '<div class="qi-top">' +
-        '<div><div class="qi-title">' + u.judul + '</div>' +
-        '<div class="qi-sub">📚 ' + u.mapel + '</div></div>' +
+        '<div style="flex:1;">' +
+          '<div class="qi-title">' + u.judul + '</div>' +
+          '<div class="qi-sub">📚 ' + u.mapel + (u.kelas && u.kelas.length ? ' • Kelas ' + (Array.isArray(u.kelas)?u.kelas.join(', '):u.kelas) : '') + '</div>' +
+        '</div>' +
         badge +
       '</div>' +
+      deskripsiHtml +
       '<div class="qi-meta">' +
         '<span>📋 ' + u.jumlah_soal + ' Soal</span>' +
         '<span>⏱ ' + u.durasi_menit + ' Menit</span>' +
-        '<span>📅 ' + mulaiStr + '</span>' +
+        (u.kkm ? '<span>🎯 KKM: ' + u.kkm + '</span>' : '') +
       '</div>' +
+      waktuHtml +
       btn +
     '</div>';
   }).join('');
@@ -8030,7 +8057,9 @@ async function loadTugasSiswa() {
       if (!sudahDinilai) {
         var btnLabel = sudahKumpul ? '🔄 Kumpulkan Ulang' : '📤 Kumpulkan Tugas';
         var btnColor = sudahKumpul ? 'linear-gradient(90deg,#059669,#10B981)' : 'linear-gradient(90deg,#2563EB,#7C3AED)';
-        btnKumpul = '<button onclick="openKumpulTugasModal(\''+t.judul+'\',\''+t.id+'\')" style="width:100%;margin-top:8px;padding:9px;border-radius:10px;border:none;background:'+btnColor+';color:#fff;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">'+btnLabel+'</button>';
+        var deskEsc  = (t.deskripsi || '').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+        var dlEsc    = (t.deadline  || '').replace(/'/g,"\\'");
+        btnKumpul = '<button onclick="openKumpulTugasModal(\''+t.judul.replace(/'/g,"\\'")+'\',\''+t.id+'\',\''+deskEsc+'\',\''+dlEsc+'\')" style="width:100%;margin-top:8px;padding:9px;border-radius:10px;border:none;background:'+btnColor+';color:#fff;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">'+btnLabel+'</button>';
       }
 
       return '<div class="task-item" style="flex-wrap:wrap;margin-bottom:10px;">'
@@ -8416,11 +8445,38 @@ function updateSoalType(type) {
   if (type === 'essay' && bobotEl && bobotEl.value === '10') bobotEl.value = '20';
 }
 
-// Override openKumpulTugasModal — save tugasId
-function openKumpulTugasModal(tugasJudul, tugasId) {
+// Override openKumpulTugasModal — save tugasId + tampilkan deskripsi & deadline
+function openKumpulTugasModal(tugasJudul, tugasId, tugasDeskripsi, tugasDeadline) {
   var modal = document.getElementById('kumpul-tugas-modal');
   if (!modal) return;
+
+  // Judul
   document.getElementById('kumpul-tugas-judul').textContent = tugasJudul || 'Tugas';
+
+  // Deskripsi instruksi
+  var deskEl  = document.getElementById('kumpul-tugas-deskripsi');
+  var deskTxt = document.getElementById('kumpul-tugas-deskripsi-text');
+  if (tugasDeskripsi && tugasDeskripsi.trim()) {
+    deskTxt.textContent = tugasDeskripsi.trim();
+    deskEl.style.display = 'block';
+  } else {
+    deskEl.style.display = 'none';
+  }
+
+  // Deadline
+  var dlEl = document.getElementById('kumpul-tugas-deadline');
+  if (tugasDeadline && dlEl) {
+    var dlDate = new Date(tugasDeadline);
+    var now    = new Date();
+    var isLate = dlDate < now;
+    dlEl.textContent = (isLate ? '⚠️ Deadline sudah lewat: ' : '⏰ Deadline: ')
+      + dlDate.toLocaleDateString('id-ID',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+    dlEl.style.color  = isLate ? '#DC2626' : '#D97706';
+    dlEl.style.display = 'block';
+  } else if (dlEl) {
+    dlEl.style.display = 'none';
+  }
+
   window._currentTugasId = tugasId || null;
   // Reset multi-file state
   window._kumpulFiles = [];
