@@ -6906,17 +6906,10 @@ async function cekSiswaUdahUjian(examId, siswaNama) {
       if (dataNisn && dataNisn.length > 0) return dataNisn[0];
     }
 
-    // Fallback: cek berdasarkan nama
-    var data = await sbFetch('/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId) + '&select=siswa_name,siswa_nisn,score,finished_at');
-    if (!data || data.length === 0) return null;
-
-    var namaParts = siswaNama.toLowerCase().split(' ').filter(function(p){ return p.length > 2; });
-    var found = data.find(function(r) {
-      var rNama = (r.siswa_name || '').toLowerCase();
-      if (rNama === siswaNama.toLowerCase()) return true;
-      return namaParts.some(function(part){ return rNama.indexOf(part) !== -1; });
-    });
-    return found || null;
+    // Fallback: cek berdasarkan nama — langsung filter di query agar lebih ringan
+    var data = await sbFetch('/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId) + '&siswa_name=eq.' + encodeURIComponent(siswaNama) + '&select=siswa_name,siswa_nisn,score,finished_at&limit=1');
+    if (data && data.length > 0) return data[0];
+    return null;
   } catch(e) { return null; }
 }
 
@@ -7359,9 +7352,15 @@ async function loadNotifSiswa(kelasSiswa) {
 
     // 3. Nilai ujian sudah keluar (exam_results milik siswa ini)
     try {
-      var nilaiQuery = nisn
-        ? '/rest/v1/exam_results?siswa_nisn=eq.' + encodeURIComponent(nisn) + '&select=*&order=finished_at.desc&limit=5'
-        : null;
+      var siswaNamaNotif = '';
+      try { siswaNamaNotif = localStorage.getItem('stuNama') || ''; } catch(e5){}
+      // Gunakan siswa_nisn jika ada, fallback ke siswa_name — guard jangan query kosong
+      var nilaiQuery = null;
+      if (nisn) {
+        nilaiQuery = '/rest/v1/exam_results?siswa_nisn=eq.' + encodeURIComponent(nisn) + '&select=exam_id,exam_title,score,correct_answers,finished_at&order=finished_at.desc&limit=5';
+      } else if (siswaNamaNotif) {
+        nilaiQuery = '/rest/v1/exam_results?siswa_name=eq.' + encodeURIComponent(siswaNamaNotif) + '&select=exam_id,exam_title,score,correct_answers,finished_at&order=finished_at.desc&limit=5';
+      }
       if (nilaiQuery) {
         var nilaiData = await sbFetch(nilaiQuery);
         if (nilaiData) {
