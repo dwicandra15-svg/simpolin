@@ -1267,16 +1267,45 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
         </div>
 
         <div class="rpt-export-row">
-          <button class="rpt-btn rpt-pdf">📄 Unduh PDF</button>
-          <button class="rpt-btn rpt-xls">📊 Unduh Excel</button>
+          <button class="rpt-btn rpt-pdf" onclick="unduhLaporanPDF()">📄 Unduh PDF</button>
+          <button class="rpt-btn rpt-xls" onclick="unduhLaporanExcel()">📊 Unduh Excel</button>
         </div>
 
         <div class="rpt-card">
+          <!-- Filter kelas & tombol muat -->
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+            <select id="laporan-filter-kelas" style="flex:1;min-width:100px;padding:8px 10px;border-radius:8px;border:1.5px solid #E2E8F0;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:#1E293B;outline:none;">
+              <option value="">— Semua Kelas —</option>
+              <option>7A</option><option>7B</option><option>7C</option>
+              <option>8A</option><option>8B</option><option>8C</option>
+              <option>9A</option><option>9B</option><option>9C</option>
+            </select>
+            <select id="laporan-filter-mapel" style="flex:1;min-width:120px;padding:8px 10px;border-radius:8px;border:1.5px solid #E2E8F0;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;color:#1E293B;outline:none;">
+              <option value="">— Semua Mapel —</option>
+              <option>Matematika</option><option>IPA</option><option>IPS</option>
+              <option>Bhs. Indonesia</option><option>Bhs. Inggris</option><option>PKN</option>
+              <option>Penjaskes</option><option>Seni Budaya</option><option>TIK</option><option>Agama</option>
+            </select>
+            <button onclick="loadLaporanNilai()" style="padding:8px 14px;border-radius:8px;border:none;background:linear-gradient(90deg,#065F46,#059669);color:#fff;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;">🔍 Tampilkan</button>
+          </div>
           <table>
-            <tr><th style="background:linear-gradient(90deg,#065F46,#059669)" colspan="5" id="laporan-rekap-title">Rekap Nilai Siswa — <span id="laporan-rekap-mapel">-</span></th></tr>
-            <tr style="background:#F8FAFC"><td style="font-size:10px;font-weight:700;color:var(--muted)">NAMA</td><td style="font-size:10px;font-weight:700;color:var(--muted)">KELAS</td><td style="font-size:10px;font-weight:700;color:var(--muted)">TUGAS</td><td style="font-size:10px;font-weight:700;color:var(--muted)">UH</td><td style="font-size:10px;font-weight:700;color:var(--muted)">GRADE</td></tr>
-            <tr><td colspan="5" style="text-align:center;padding:16px;color:#64748B;font-size:12px;" id="laporan-empty-row">Belum ada data nilai. Pilih kelas dan filter dulu.</td></tr>
-            <tr style="background:#F0FDF4"><td colspan="2"><strong>Rata-rata Kelas</strong></td><td style="font-size:11px"><strong style="color:var(--g)">87.5</strong></td><td style="font-size:11px"><strong style="color:var(--g)">86.0</strong></td><td><span class="ng ng-b" style="font-size:10px">B+</span></td></tr>
+            <tr><th style="background:linear-gradient(90deg,#065F46,#059669)" colspan="5" id="laporan-rekap-title">Rekap Nilai Siswa — <span id="laporan-rekap-mapel">Semua Mapel</span></th></tr>
+            <tr style="background:#F8FAFC">
+              <td style="font-size:10px;font-weight:700;color:var(--muted)">NAMA</td>
+              <td style="font-size:10px;font-weight:700;color:var(--muted)">KELAS</td>
+              <td style="font-size:10px;font-weight:700;color:var(--muted)">TUGAS</td>
+              <td style="font-size:10px;font-weight:700;color:var(--muted)">UH</td>
+              <td style="font-size:10px;font-weight:700;color:var(--muted)">GRADE</td>
+            </tr>
+            <tbody id="laporan-tbody">
+              <tr><td colspan="5" style="text-align:center;padding:16px;color:#64748B;font-size:12px;">Pilih filter lalu klik Tampilkan.</td></tr>
+            </tbody>
+            <tr style="background:#F0FDF4" id="laporan-rata-row" style="display:none;">
+              <td colspan="2"><strong>Rata-rata Kelas</strong></td>
+              <td style="font-size:11px"><strong style="color:var(--g)" id="laporan-rata-tugas">-</strong></td>
+              <td style="font-size:11px"><strong style="color:var(--g)" id="laporan-rata-uh">-</strong></td>
+              <td><span class="ng" id="laporan-rata-grade" style="font-size:10px">-</span></td>
+            </tr>
           </table>
         </div>
       </div>
@@ -7386,6 +7415,49 @@ async function loadNotifSiswa(kelasSiswa) {
       }
     } catch(e5) {}
 
+    // 3.5 Nilai TUGAS sudah diberikan guru (+ catatan guru jika ada)
+    try {
+      var siswaNamaTugas = '';
+      try { siswaNamaTugas = localStorage.getItem('stuNama') || ''; } catch(e7){}
+      var tugasNilaiQ = null;
+      if (nisn) {
+        tugasNilaiQ = '/rest/v1/tugas_submit?siswa_nisn=eq.'+encodeURIComponent(nisn)+'&status=eq.dinilai&select=tugas_id,nilai,catatan_guru,dinilai_at&order=dinilai_at.desc&limit=10';
+      } else if (siswaNamaTugas) {
+        tugasNilaiQ = '/rest/v1/tugas_submit?siswa_nama=eq.'+encodeURIComponent(siswaNamaTugas)+'&status=eq.dinilai&select=tugas_id,nilai,catatan_guru,dinilai_at&order=dinilai_at.desc&limit=10';
+      }
+      if (tugasNilaiQ) {
+        var tugasNilaiData = await sbFetch(tugasNilaiQ);
+        if (tugasNilaiData && tugasNilaiData.length > 0) {
+          // Ambil judul tugas
+          var tIds = tugasNilaiData.map(function(t){ return t.tugas_id; }).filter(Boolean);
+          var tJudulMap = {};
+          if (tIds.length > 0) {
+            try {
+              var tJudulRes = await sbFetch('/rest/v1/tugas?id=in.('+tIds.join(',')+')'+'&select=id,judul&limit=10');
+              if (tJudulRes) tJudulRes.forEach(function(j){ tJudulMap[j.id] = j.judul; });
+            } catch(e8){}
+          }
+          tugasNilaiData.forEach(function(t) {
+            var dinilaiAt = t.dinilai_at ? new Date(t.dinilai_at) : now;
+            var isNew     = dinilaiAt > batas7;
+            var judul     = tJudulMap[t.tugas_id] || 'Tugas';
+            var nilaiNum  = t.nilai !== null && t.nilai !== undefined ? t.nilai : '-';
+            var grade     = nilaiNum >= 90 ? 'A' : nilaiNum >= 80 ? 'B+' : nilaiNum >= 75 ? 'B' : nilaiNum >= 65 ? 'C+' : nilaiNum >= 60 ? 'C' : 'D';
+            var bodyText  = '📊 Nilai: ' + nilaiNum + ' (' + grade + ')';
+            if (t.catatan_guru) bodyText += ' • 💬 ' + t.catatan_guru;
+            items.push({
+              icon: nilaiNum >= 75 ? '🌟' : '📋',
+              title: 'Tugas Dinilai — ' + judul,
+              body:  bodyText,
+              sub:   '📅 ' + dinilaiAt.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}),
+              isNew: isNew,
+              ts:    t.dinilai_at || ''
+            });
+          });
+        }
+      }
+    } catch(e9) {}
+
     // 4. Remidi diizinkan guru
     try {
       var retryData = await sbFetch('/rest/v1/exam_logs?event_type=eq.retry_approved&select=*&order=created_at.desc&limit=5');
@@ -7687,7 +7759,7 @@ async function _openNilaiTugasModalFull(tugasId, tugasJudul) {
   try {
     // ── PHASE 1: Ambil metadata saja — TANPA kolom file besar ──
     // Ini mencegah timeout karena file_data/file_url/files_json bisa ratusan KB per baris
-    var metaCols = 'id,tugas_id,siswa_nama,siswa_kelas,siswa_nisn,file_name,file_type,komentar,status,nilai,submitted_at';
+    var metaCols = 'id,tugas_id,siswa_nama,siswa_kelas,siswa_nisn,file_name,file_type,komentar,catatan_guru,status,nilai,submitted_at';
     var rawData = await sbFetch('/rest/v1/tugas_submit?tugas_id=eq.'+encodeURIComponent(tugasId)+'&select='+metaCols+'&order=submitted_at.desc');
 
     if (!rawData || rawData.length === 0) {
@@ -7752,21 +7824,38 @@ async function _openNilaiTugasModalFull(tugasId, tugasJudul) {
         fileInfo = '<div id="file-area-'+s.id+'" style="margin-top:4px;font-size:11px;color:#94A3B8;">📄 Tidak ada file dilampirkan</div>';
       }
 
-      return '<div style="padding:12px;background:'+bg+';border-radius:10px;margin-bottom:6px;border:1.5px solid #E2E8F0;">'
-        + '<div style="display:flex;align-items:flex-start;gap:10px;">'
-          + '<div style="flex:1;">'
+      return '<div style="padding:12px;background:'+bg+';border-radius:10px;margin-bottom:8px;border:1.5px solid #E2E8F0;">'
+        // ── Baris atas: nama + status ──
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">'
+          + '<div>'
             + '<div style="font-size:13px;font-weight:800;color:#1E293B;">'+siswaNama+'</div>'
             + '<div style="font-size:11px;color:#64748B;font-weight:600;margin-top:1px;">'+siswaKelas+' • '+(s.status==='submitted'||s.status==='dinilai'?'✅ Terkumpul':'⏳ Pending')+'</div>'
-            + '<div id="file-area-'+s.id+'">'+fileInfo+'</div>'
-            + (s.komentar ? '<div style="font-size:11px;color:#64748B;margin-top:4px;background:#F1F5F9;padding:6px 8px;border-radius:6px;">💬 '+s.komentar+'</div>' : '')
           + '</div>'
-          + '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">'
-            + '<input type="number" min="0" max="100" value="'+(s.nilai||'')+'" placeholder="0-100" data-submit-id="'+s.id+'" '
-              + 'style="width:70px;padding:6px 8px;border-radius:8px;border:1.5px solid #E2E8F0;font-family:\'Nunito\',sans-serif;font-size:13px;font-weight:700;text-align:center;outline:none;" '
+          + (s.nilai ? '<span style="font-size:11px;background:#D1FAE5;color:#065F46;font-weight:800;padding:4px 10px;border-radius:99px;white-space:nowrap;">✅ '+s.nilai+'</span>'
+                     : '<span style="font-size:11px;background:#FEF3C7;color:#92400E;font-weight:800;padding:4px 10px;border-radius:99px;white-space:nowrap;">⏳ Belum</span>')
+        + '</div>'
+        // ── Area file ──
+        + '<div id="file-area-'+s.id+'">'+fileInfo+'</div>'
+        // ── Catatan dari siswa ──
+        + (s.komentar ? '<div style="font-size:11px;color:#475569;margin-top:6px;background:#F1F5F9;padding:7px 10px;border-radius:8px;border-left:3px solid #94A3B8;">💬 <em>'+s.komentar+'</em></div>' : '')
+        // ── Area nilai + catatan guru (full width, rapi) ──
+        + '<div style="margin-top:10px;padding-top:10px;border-top:1.5px dashed #E2E8F0;">'
+          + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+            + '<label style="font-size:11px;font-weight:800;color:#374151;white-space:nowrap;">📊 NILAI:</label>'
+            + '<input type="number" min="0" max="100" value="'+(s.nilai||'')+'" placeholder="0–100" data-submit-id="'+s.id+'" '
+              + 'style="width:80px;padding:7px 10px;border-radius:8px;border:1.5px solid #CBD5E1;font-family:\'Nunito\',sans-serif;font-size:14px;font-weight:800;text-align:center;outline:none;color:#1E293B;" '
               + 'oninput="previewNilai(this)">'
-            + (s.nilai ? '<span style="font-size:10px;color:#059669;font-weight:800;">✅ Dinilai: '+s.nilai+'</span>' : '<span style="font-size:10px;color:#F59E0B;font-weight:800;">⏳ Belum</span>')
+            + '<span style="font-size:10px;color:#94A3B8;">/ 100</span>'
           + '</div>'
-        + '</div></div>';
+          + '<div>'
+            + '<label style="font-size:11px;font-weight:800;color:#374151;">📝 CATATAN GURU:</label>'
+            + '<textarea data-catatan-id="'+s.id+'" rows="2" placeholder="Tulis catatan/feedback untuk siswa ini (opsional)..." '
+              + 'style="width:100%;margin-top:4px;padding:8px 10px;border-radius:8px;border:1.5px solid #CBD5E1;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:600;color:#1E293B;outline:none;resize:none;background:#FAFAFA;box-sizing:border-box;">'
+              + (s.catatan_guru || '')
+            + '</textarea>'
+          + '</div>'
+        + '</div>'
+      + '</div>';
     }).join('');
 
   } catch(e) {
@@ -7968,20 +8057,44 @@ function previewNilai(input) {
 async function simpanSemuaNilai() {
   var inputs = document.querySelectorAll('#nilai-siswa-list input[type=number]');
   var saved = 0;
+  var btn = document.querySelector('#nilai-tugas-modal .modal-save');
+  if (btn) { btn.textContent = '⏳ Menyimpan...'; btn.disabled = true; }
+
   for (var i = 0; i < inputs.length; i++) {
     var inp = inputs[i];
     var nilai = parseInt(inp.value);
     var submitId = inp.getAttribute('data-submit-id');
     if (!isNaN(nilai) && submitId) {
+      // Ambil catatan guru dari textarea yang sesuai
+      var catatanEl = document.querySelector('[data-catatan-id="'+submitId+'"]');
+      var catatanGuru = catatanEl ? catatanEl.value.trim() : '';
       try {
         await sbFetch('/rest/v1/tugas_submit?id=eq.'+submitId, {
           method: 'PATCH',
-          body: JSON.stringify({ nilai: nilai, status: 'dinilai', dinilai_at: new Date().toISOString() })
+          body: JSON.stringify({
+            nilai: nilai,
+            status: 'dinilai',
+            catatan_guru: catatanGuru || null,
+            dinilai_at: new Date().toISOString()
+          })
         });
         saved++;
       } catch(e) { console.log('Save nilai error', e); }
+    } else if (submitId) {
+      // Simpan catatan guru saja meski belum ada nilai
+      var catatanEl2 = document.querySelector('[data-catatan-id="'+submitId+'"]');
+      var catatanGuru2 = catatanEl2 ? catatanEl2.value.trim() : '';
+      if (catatanGuru2) {
+        try {
+          await sbFetch('/rest/v1/tugas_submit?id=eq.'+submitId, {
+            method: 'PATCH',
+            body: JSON.stringify({ catatan_guru: catatanGuru2 })
+          });
+        } catch(e2) {}
+      }
     }
   }
+  if (btn) { btn.textContent = '💾 Simpan Semua Nilai'; btn.disabled = false; }
   document.getElementById('nilai-tugas-modal').classList.remove('open');
   showToast('✅ '+saved+' nilai berhasil disimpan!', '#D1FAE5', '#065F46');
 }
@@ -8238,7 +8351,7 @@ async function loadNilaiSiswa() {
 
   try {
     // Load nilai tugas — join dengan tabel tugas untuk ambil judul
-    var tugasData = await sbFetch('/rest/v1/tugas_submit?siswa_nama=eq.'+encodeURIComponent(siswaNama)+'&select=tugas_id,nilai,status,submitted_at');
+    var tugasData = await sbFetch('/rest/v1/tugas_submit?siswa_nama=eq.'+encodeURIComponent(siswaNama)+'&select=tugas_id,nilai,status,catatan_guru,submitted_at');
     // Load nilai ujian
     var ujianData = await sbFetch('/rest/v1/exam_results?siswa_name=eq.'+encodeURIComponent(siswaNama)+'&select=*');
 
@@ -8271,9 +8384,12 @@ async function loadNilaiSiswa() {
         var info = tugasJudulMap[t.tugas_id] || {};
         var judulTampil = info.judul || (t.tugas_id ? t.tugas_id.substring(0,8)+'...' : 'Tugas');
         var ng = t.nilai >= 80 ? 'ng-a' : t.nilai >= 65 ? 'ng-b' : 'ng-c';
+        var catatanHtml = t.catatan_guru
+          ? '<div style="margin-top:3px;font-size:10px;color:#1D4ED8;background:#EFF6FF;border-radius:5px;padding:3px 6px;font-style:italic;">📝 '+t.catatan_guru+'</div>'
+          : '';
         rows += '<tr>'
           + '<td>✍️ Tugas</td>'
-          + '<td style="font-size:12px;max-width:120px;word-break:break-word;">'+judulTampil+(info.mapel?'<br><span style="color:#64748B;font-size:10px;">'+info.mapel+'</span>':'')+'</td>'
+          + '<td style="font-size:12px;max-width:120px;word-break:break-word;">'+judulTampil+(info.mapel?'<br><span style="color:#64748B;font-size:10px;">'+info.mapel+'</span>':'')+catatanHtml+'</td>'
           + '<td><strong>'+t.nilai+'</strong></td>'
           + '<td><span class="ng '+ng+'">'+(t.nilai>=80?'A':t.nilai>=65?'B':'C')+'</span></td>'
           + '</tr>';
@@ -8303,7 +8419,233 @@ async function loadNilaiSiswa() {
   }
 }
 
-// ── Unduh Rapor PDF (print browser) ──
+// ════════════════════════════════════════════════════════
+// LAPORAN NILAI KELAS — Guru
+// ════════════════════════════════════════════════════════
+window._laporanData = []; // cache hasil query terakhir
+
+async function loadLaporanNilai() {
+  var tbody   = document.getElementById('laporan-tbody');
+  var rataRow = document.getElementById('laporan-rata-row');
+  if (!tbody) return;
+
+  var filterKelas = (document.getElementById('laporan-filter-kelas') || {}).value || '';
+  var filterMapel = (document.getElementById('laporan-filter-mapel') || {}).value || '';
+
+  // Update header mapel
+  var mapelSpan = document.getElementById('laporan-rekap-mapel');
+  if (mapelSpan) mapelSpan.textContent = filterMapel || 'Semua Mapel';
+
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:#64748B;font-size:12px;">⏳ Memuat data...</td></tr>';
+
+  try {
+    // ── 1. Ambil nilai tugas (metadata saja, tanpa file) ──
+    var tugasCols = 'siswa_nama,siswa_kelas,nilai,status,tugas_id';
+    var tugasQ = '/rest/v1/tugas_submit?select='+tugasCols+'&status=eq.dinilai';
+    if (filterKelas) tugasQ += '&siswa_kelas=eq.'+encodeURIComponent(filterKelas);
+    var tugasSubmit = await sbFetch(tugasQ) || [];
+
+    // ── 2. Ambil judul tugas untuk filter mapel ──
+    var tugasJudulMap = {};
+    if (tugasSubmit.length > 0) {
+      var _allIds = tugasSubmit.map(function(t){ return t.tugas_id; }).filter(Boolean);
+      var ids = _allIds.filter(function(v,i){ return _allIds.indexOf(v) === i; }); // deduplikasi tanpa Set
+      if (ids.length > 0) {
+        try {
+          var judulQ = '/rest/v1/tugas?id=in.('+ids.join(',')+')'+'&select=id,judul,mapel_nama,kelas';
+          var judulRes = await sbFetch(judulQ) || [];
+          judulRes.forEach(function(j){ tugasJudulMap[j.id] = j; });
+        } catch(e2){}
+      }
+    }
+
+    // ── 3. Ambil nilai ujian (UH) ──
+    // Kolom exam_results: siswa_name, siswa_nisn, score, exam_title, finished_at
+    // (tidak ada siswa_kelas/mapel — filter kelas dilakukan di client)
+    var uhQ = '/rest/v1/exam_results?select=siswa_name,siswa_nisn,score,exam_title,finished_at';
+    var uhData = await sbFetch(uhQ) || [];
+
+    // Filter kelas di client — cocokkan nama siswa dengan data tugas yang sudah difilter kelas
+    var siswaNamaDiKelas = {};
+    tugasSubmit.forEach(function(t){ siswaNamaDiKelas[t.siswa_nama] = t.siswa_kelas || '-'; });
+    // Jika filter kelas aktif, hanya ambil UH dari siswa yang ada di kelas tersebut
+    if (filterKelas) {
+      uhData = uhData.filter(function(u){ return siswaNamaDiKelas.hasOwnProperty(u.siswa_name); });
+    }
+
+    // ── 4. Gabungkan per siswa ──
+    var siswaMap = {}; // key: siswa_nama
+
+    tugasSubmit.forEach(function(t) {
+      if (!t.nilai && t.nilai !== 0) return;
+      var info = tugasJudulMap[t.tugas_id] || {};
+      // Filter mapel
+      if (filterMapel && info.mapel_nama && info.mapel_nama !== filterMapel) return;
+      var key = t.siswa_nama;
+      if (!siswaMap[key]) siswaMap[key] = { nama: t.siswa_nama, kelas: t.siswa_kelas || '-', tugasNilai: [], uhNilai: [] };
+      siswaMap[key].tugasNilai.push(parseFloat(t.nilai));
+    });
+
+    uhData.forEach(function(u) {
+      if (!u.score && u.score !== 0) return;
+      if (filterMapel) return; // exam_results tidak punya kolom mapel — skip filter mapel untuk UH
+      var key = u.siswa_name;
+      var kelasUh = siswaNamaDiKelas[key] || u.siswa_kelas || '-';
+      if (!siswaMap[key]) siswaMap[key] = { nama: u.siswa_name, kelas: kelasUh, tugasNilai: [], uhNilai: [] };
+      siswaMap[key].uhNilai.push(parseFloat(u.score));
+    });
+
+    var rows = Object.values(siswaMap);
+    // Sort nama
+    rows.sort(function(a,b){ return a.nama.localeCompare(b.nama); });
+
+    // Simpan cache untuk export
+    window._laporanData = rows;
+    window._laporanFilter = { kelas: filterKelas, mapel: filterMapel };
+
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748B;font-size:12px;">Tidak ada data nilai untuk filter yang dipilih.</td></tr>';
+      return;
+    }
+
+    var totalTugas = 0, cTugas = 0, totalUh = 0, cUh = 0;
+
+    tbody.innerHTML = rows.map(function(s, idx) {
+      var avgTugas = s.tugasNilai.length > 0 ? (s.tugasNilai.reduce(function(a,b){return a+b;},0)/s.tugasNilai.length) : null;
+      var avgUh    = s.uhNilai.length    > 0 ? (s.uhNilai.reduce(function(a,b){return a+b;},0)/s.uhNilai.length)    : null;
+      if (avgTugas !== null) { totalTugas += avgTugas; cTugas++; }
+      if (avgUh    !== null) { totalUh    += avgUh;    cUh++;    }
+
+      // Grade dari rata-rata gabungan
+      var combined = (avgTugas !== null && avgUh !== null) ? (avgTugas*0.4 + avgUh*0.6)
+        : (avgTugas !== null ? avgTugas : (avgUh !== null ? avgUh : null));
+      var grade = combined === null ? '-' : combined >= 90 ? 'A' : combined >= 80 ? 'B+' : combined >= 75 ? 'B'
+        : combined >= 65 ? 'C+' : combined >= 60 ? 'C' : 'D';
+      var gradeClass = combined >= 80 ? 'ng-a' : combined >= 65 ? 'ng-b' : 'ng-c';
+
+      var bg = idx % 2 === 0 ? '#fff' : '#F8FAFC';
+      return '<tr style="background:'+bg+'">'
+        + '<td style="font-size:12px;font-weight:700;">'+s.nama+'</td>'
+        + '<td style="font-size:11px;color:#64748B;text-align:center;">'+s.kelas+'</td>'
+        + '<td style="text-align:center;font-size:12px;font-weight:800;color:#1D4ED8;">'+(avgTugas !== null ? avgTugas.toFixed(1) : '<span style="color:#94A3B8">-</span>')+'</td>'
+        + '<td style="text-align:center;font-size:12px;font-weight:800;color:#059669;">'+(avgUh !== null ? avgUh.toFixed(1) : '<span style="color:#94A3B8">-</span>')+'</td>'
+        + '<td style="text-align:center;">'+(combined !== null ? '<span class="ng '+gradeClass+'" style="font-size:10px;">'+grade+'</span>' : '-')+'</td>'
+      + '</tr>';
+    }).join('');
+
+    // Rata-rata kelas
+    var rataT = cTugas > 0 ? (totalTugas/cTugas).toFixed(1) : '-';
+    var rataU = cUh    > 0 ? (totalUh/cUh).toFixed(1)       : '-';
+    var rataAll = (cTugas > 0 && cUh > 0) ? ((totalTugas/cTugas)*0.4 + (totalUh/cUh)*0.6)
+      : (cTugas > 0 ? totalTugas/cTugas : (cUh > 0 ? totalUh/cUh : null));
+    var rataGrade = rataAll === null ? '-' : rataAll >= 90 ? 'A' : rataAll >= 80 ? 'B+' : rataAll >= 75 ? 'B' : rataAll >= 65 ? 'C+' : rataAll >= 60 ? 'C' : 'D';
+    var rataGC    = rataAll >= 80 ? 'ng-a' : rataAll >= 65 ? 'ng-b' : 'ng-c';
+
+    var rEl = document.getElementById('laporan-rata-tugas');
+    var uEl = document.getElementById('laporan-rata-uh');
+    var gEl = document.getElementById('laporan-rata-grade');
+    if (rEl) rEl.textContent = rataT;
+    if (uEl) uEl.textContent = rataU;
+    if (gEl) { gEl.textContent = rataGrade; gEl.className = 'ng '+rataGC; }
+    if (rataRow) rataRow.style.display = '';
+
+    showToast('✅ '+rows.length+' siswa dimuat.', '#D1FAE5', '#065F46');
+
+  } catch(e) {
+    console.error('loadLaporanNilai error:', e);
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:16px;color:#991B1B;font-size:12px;">⚠️ Gagal memuat. Cek koneksi.</td></tr>';
+  }
+}
+
+// ── Unduh Laporan PDF ──
+function unduhLaporanPDF() {
+  var rows = window._laporanData || [];
+  var filter = window._laporanFilter || {};
+  if (rows.length === 0) { showToast('⚠️ Muat data terlebih dahulu!', '#FEE2E2', '#991B1B'); return; }
+
+  var kopTitle    = (document.getElementById('kop-tea-title')    || {}).textContent || 'SIMPOLIN School';
+  var kopSubtitle = (document.getElementById('kop-tea-subtitle') || {}).textContent || '';
+  var guruNama    = (document.getElementById('laporan-guru-nama') || {}).textContent || '-';
+  var guruMapel   = filter.mapel || (document.getElementById('laporan-guru-mapel') || {}).textContent || 'Semua';
+
+  var tableRows = rows.map(function(s, i) {
+    var avgT = s.tugasNilai.length > 0 ? (s.tugasNilai.reduce(function(a,b){return a+b;},0)/s.tugasNilai.length).toFixed(1) : '-';
+    var avgU = s.uhNilai.length    > 0 ? (s.uhNilai.reduce(function(a,b){return a+b;},0)/s.uhNilai.length).toFixed(1)       : '-';
+    var combined = (s.tugasNilai.length > 0 && s.uhNilai.length > 0)
+      ? (parseFloat(avgT)*0.4 + parseFloat(avgU)*0.6)
+      : (s.tugasNilai.length > 0 ? parseFloat(avgT) : (s.uhNilai.length > 0 ? parseFloat(avgU) : null));
+    var grade = combined === null ? '-' : combined >= 90 ? 'A' : combined >= 80 ? 'B+' : combined >= 75 ? 'B' : combined >= 65 ? 'C+' : 'C';
+    var bg = i%2===0?'#fff':'#F8FAFC';
+    return '<tr style="background:'+bg+'"><td>'+(i+1)+'</td><td style="font-weight:700;">'+s.nama+'</td><td style="text-align:center;">'+s.kelas+'</td><td style="text-align:center;">'+avgT+'</td><td style="text-align:center;">'+avgU+'</td><td style="text-align:center;font-weight:800;">'+grade+'</td></tr>';
+  }).join('');
+
+  var w = window.open('','_blank');
+  if (!w) { showToast('⚠️ Pop-up diblokir browser.','#FEE2E2','#991B1B'); return; }
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Laporan Nilai — '+guruMapel+'</title>'
+    + '<style>body{font-family:Arial,sans-serif;margin:20px;font-size:12px;color:#1E293B;}'
+    + 'h2{text-align:center;font-size:15px;margin:0;} .sub{text-align:center;font-size:10px;color:#64748B;}'
+    + 'hr{border:none;border-top:2px solid #065F46;margin:8px 0;}'
+    + 'table{width:100%;border-collapse:collapse;margin-top:10px;}'
+    + 'th{background:#065F46;color:#fff;padding:6px 8px;font-size:10px;text-align:left;}'
+    + 'td{padding:6px 8px;border-bottom:1px solid #E2E8F0;font-size:11px;}'
+    + '.footer{margin-top:12px;text-align:right;font-size:10px;color:#64748B;}'
+    + '@media print{body{margin:10px;}}'
+    + '</style></head><body>'
+    + '<h2>'+kopTitle+'</h2><div class="sub">'+kopSubtitle+'</div><hr>'
+    + '<div style="text-align:center;font-weight:700;font-size:12px;margin-bottom:3px;">LAPORAN NILAI KELAS — SEMESTER GENAP 2025/2026</div>'
+    + '<div class="sub">Guru: '+guruNama+' | Mata Pelajaran: '+guruMapel+(filter.kelas?' | Kelas: '+filter.kelas:'')+'</div>'
+    + '<table><tr><th>No</th><th>Nama Siswa</th><th>Kelas</th><th>Tugas</th><th>UH</th><th>Grade</th></tr>'
+    + tableRows + '</table>'
+    + '<div class="footer">Dicetak: '+new Date().toLocaleString('id-ID')+'</div>'
+    + '<script>window.onload=function(){window.print();}<\/script></body></html>');
+  w.document.close();
+}
+
+// ── Unduh Laporan Excel ──
+function unduhLaporanExcel() {
+  var rows = window._laporanData || [];
+  var filter = window._laporanFilter || {};
+  if (rows.length === 0) { showToast('⚠️ Muat data terlebih dahulu!', '#FEE2E2', '#991B1B'); return; }
+
+  var guruNama  = (document.getElementById('laporan-guru-nama')  || {}).textContent || '-';
+  var guruMapel = filter.mapel || (document.getElementById('laporan-guru-mapel') || {}).textContent || 'Semua';
+
+  var wsData = [
+    ['LAPORAN NILAI KELAS — SEMESTER GENAP 2025/2026'],
+    ['Guru:', guruNama, 'Mapel:', guruMapel, 'Kelas:', filter.kelas || 'Semua'],
+    ['Dicetak:', new Date().toLocaleString('id-ID')],
+    [],
+    ['NO', 'NAMA SISWA', 'KELAS', 'RATA TUGAS', 'RATA UH', 'GRADE']
+  ];
+
+  rows.forEach(function(s, i) {
+    var avgT = s.tugasNilai.length > 0 ? parseFloat((s.tugasNilai.reduce(function(a,b){return a+b;},0)/s.tugasNilai.length).toFixed(1)) : '';
+    var avgU = s.uhNilai.length    > 0 ? parseFloat((s.uhNilai.reduce(function(a,b){return a+b;},0)/s.uhNilai.length).toFixed(1))       : '';
+    var combined = (avgT !== '' && avgU !== '') ? avgT*0.4+avgU*0.6 : (avgT !== '' ? avgT : (avgU !== '' ? avgU : null));
+    var grade = combined === null ? '-' : combined >= 90 ? 'A' : combined >= 80 ? 'B+' : combined >= 75 ? 'B' : combined >= 65 ? 'C+' : 'C';
+    wsData.push([i+1, s.nama, s.kelas, avgT, avgU, grade]);
+  });
+
+  function _doExcelLaporan() {
+    var wb = XLSX.utils.book_new();
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [{wch:4},{wch:28},{wch:7},{wch:11},{wch:8},{wch:7}];
+    XLSX.utils.book_append_sheet(wb, ws, 'Laporan Nilai');
+    XLSX.writeFile(wb, 'LaporanNilai_'+(filter.mapel||'Semua')+'_'+(filter.kelas||'AllKelas')+'.xlsx');
+    showToast('📊 File Excel sedang diunduh...', '#D1FAE5', '#065F46');
+  }
+
+  if (typeof XLSX !== 'undefined') { _doExcelLaporan(); }
+  else {
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = _doExcelLaporan;
+    s.onerror = function(){ showToast('⚠️ Gagal load library Excel.','#FEE2E2','#991B1B'); };
+    document.head.appendChild(s);
+  }
+}
+
+// ── Unduh Rapor PDF (print browser) — Mode Siswa ──
 function unduhRaporPDF() {
   var namaSiswa = '';
   try { var h = document.getElementById('stu-header-name'); if(h) namaSiswa = h.textContent.replace(/\s*—.*/,'').trim(); } catch(e){}
