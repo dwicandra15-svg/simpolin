@@ -6445,6 +6445,7 @@ async function simpanUjian() {
     created_at: new Date().toISOString()
   };
 
+  var savedOk = false;
   try {
     var saveRes = await fetch(SUPABASE_URL + '/rest/v1/ujian', {
       method: 'POST',
@@ -6471,24 +6472,34 @@ async function simpanUjian() {
         created_at: ujianBaru.created_at
       })
     });
-    if (!saveRes.ok) {
+    if (saveRes.ok) {
+      savedOk = true;
+    } else {
       var saveErr = await saveRes.text();
-      console.warn('Simpan ujian HTTP error:', saveRes.status, saveErr);
+      console.error('Simpan ujian gagal:', saveRes.status, saveErr);
+      btn.textContent = '💾 Buat Ujian'; btn.disabled = false;
+      showToast('❌ Gagal simpan ke server! ' + saveRes.status + ': ' + saveErr.substring(0, 100), '#FEE2E2', '#991B1B');
+      return;
     }
-  } catch(e) { console.log('Simpan ujian offline:', e.message); }
+  } catch(e) {
+    console.error('Simpan ujian error:', e);
+    btn.textContent = '💾 Buat Ujian'; btn.disabled = false;
+    showToast('❌ Tidak bisa konek ke server: ' + e.message, '#FEE2E2', '#991B1B');
+    return;
+  }
 
-  // Add to local list immediately
+  // Hanya lanjut jika berhasil tersimpan di Supabase
   if (!ujianDibuat) ujianDibuat = [];
-  if (ujianBaru) ujianDibuat.unshift(ujianBaru);
+  ujianDibuat.unshift(ujianBaru);
 
-  // Update display — guru history & siswa panel
+  // Update display
   renderUjianHistory();
   renderUjianSiswa();
 
   document.getElementById('buat-ujian-modal').classList.remove('open');
   soalTerpilih = [];
   btn.textContent = '💾 Buat Ujian'; btn.disabled = false;
-  showToast('✅ Ujian "' + judul + '" berhasil dibuat! (' + ujianBaru.jumlah_soal + ' soal)', '#D1FAE5', '#065F46');
+  showToast('✅ Ujian "' + judul + '" berhasil disimpan! (' + ujianBaru.jumlah_soal + ' soal)', '#D1FAE5', '#065F46');
 }
 
 // ── RENDER UJIAN HISTORY — tampil di dashboard guru ──
