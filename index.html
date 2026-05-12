@@ -7235,16 +7235,28 @@ async function loadUjianForSiswa(kelasSiswa) {
     if (data && data.length > 0) {
       // Dedup berdasarkan exam_id
       data = deduplicateUjian(data);
-      // Filter kelas siswa
+      // Filter kelas siswa — handle berbagai format dari Supabase
       ujianUntukSiswa = data.filter(function(u) {
         if (!kelasSiswa) return true;
         var kls = u.kelas;
         if (!kls || kls.length === 0) return true;
+        // Supabase text[] → sudah jadi array JS
         if (Array.isArray(kls)) return kls.indexOf(kelasSiswa) !== -1;
-        if (typeof kls === 'string') return kls.indexOf(kelasSiswa) !== -1;
+        // Supabase mengembalikan string JSON: "[\"8A\",\"8B\"]"
+        if (typeof kls === 'string') {
+          // Coba parse sebagai JSON array
+          try {
+            var parsed = JSON.parse(kls);
+            if (Array.isArray(parsed)) return parsed.indexOf(kelasSiswa) !== -1;
+          } catch(e) {}
+          // Fallback: cek apakah string mengandung kelasSiswa
+          return kls.indexOf(kelasSiswa) !== -1;
+        }
         return true;
       }).map(function(u) {
-        if (!u.jumlah_soal && u.soal_ids) u.jumlah_soal = u.soal_ids.length;
+        if (!u.jumlah_soal && u.soal_ids) {
+          u.jumlah_soal = Array.isArray(u.soal_ids) ? u.soal_ids.length : 0;
+        }
         return u;
       });
     }
@@ -7259,11 +7271,8 @@ async function loadUjianForSiswa(kelasSiswa) {
     return;
   }
 
-  // Filter ujian yang sudah disembunyikan siswa
-  var hiddenExams = getHiddenExams();
-  ujianUntukSiswa = ujianUntukSiswa.filter(function(u){
-    return hiddenExams.indexOf(u.exam_id) === -1;
-  });
+  // CATATAN: hiddenExams sengaja tidak difilter agar ujian tidak hilang
+  // (fitur sembunyikan dihapus karena rentan menyebabkan ujian tidak terlihat)
 
   container.innerHTML = ujianUntukSiswa.map(function(u) {
     var now = new Date();
@@ -7272,7 +7281,15 @@ async function loadUjianForSiswa(kelasSiswa) {
     var isAktif = mulai <= now && now <= selesai;
     var isAkan  = mulai > now;
     var mulaiStr = mulai.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
-    var nSoal = u.jumlah_soal || (u.soal_ids ? u.soal_ids.length : 0);
+    var selesaiStr = selesai.toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    var nSoal = u.jumlah_soal || (u.soal_ids ? (Array.isArray(u.soal_ids)?u.soal_ids.length:0) : 0);
+
+    // Kelas display
+    var kelasDisplay = '';
+    if (u.kelas) {
+      var kArr = Array.isArray(u.kelas) ? u.kelas : (function(){ try{ return JSON.parse(u.kelas); }catch(e){ return [u.kelas]; } })();
+      kelasDisplay = ' • 🏫 ' + (Array.isArray(kArr) ? kArr.join(', ') : kArr);
+    }
 
     var badge = isAktif
       ? '<span class="qi-badge qb-aktif">🟢 Aktif</span>'
@@ -7282,15 +7299,22 @@ async function loadUjianForSiswa(kelasSiswa) {
     var btn = isAktif
       ? '<button class="qi-btn qi-btn-start" onclick="launchExamWithCheck(\''+u.judul+'\','+u.durasi_menit+',\''+u.exam_id+'\')">🚀 Mulai Ujian Sekarang</button>'
       : isAkan
-      ? '<button class="qi-btn qi-btn-lock">🔒 Dibuka: '+mulaiStr+'</button>'
-      : '<div style="display:flex;gap:6px;"><button class="qi-btn qi-btn-result" style="flex:1;">📊 Lihat Hasil</button>'
-        + '<button onclick="hapusUjianSiswa(\''+u.exam_id+'\')" style="padding:8px 12px;border-radius:9px;border:none;background:#FEE2E2;color:#991B1B;font-family:\'Nunito\',sans-serif;font-size:12px;font-weight:800;cursor:pointer;">🗑️</button></div>';
+      ? '<button class="qi-btn qi-btn-lock" style="opacity:0.7;cursor:not-allowed;">🔒 Dibuka: '+mulaiStr+'</button>'
+      : '<button class="qi-btn qi-btn-result">📊 Ujian Selesai</button>';
+
+    // Waktu pelaksanaan detail
+    var waktuInfo = '<div style="display:flex;flex-wrap:wrap;gap:5px;margin:6px 0;">'
+      + '<span style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;color:#1D4ED8;">📅 Mulai: '+mulaiStr+'</span>'
+      + '<span style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;color:#C2410C;">🏁 Selesai: '+selesaiStr+'</span>'
+      + '</div>';
 
     return '<div class="quiz-item" id="ujian-stu-'+u.exam_id+'">'
-      + '<div class="qi-top"><div><div class="qi-title">'+u.judul+'</div>'
-      + '<div class="qi-sub">📚 '+(u.mapel||'')+' • 🏫 '+(Array.isArray(u.kelas)?u.kelas.join(', '):(u.kelas||''))+'</div></div>'+badge+'</div>'
+      + '<div class="qi-top"><div style="flex:1;"><div class="qi-title">'+u.judul+'</div>'
+      + '<div class="qi-sub">📚 '+(u.mapel||'')+kelasDisplay+'</div></div>'+badge+'</div>'
+      + waktuInfo
       + '<div class="qi-meta">'+(nSoal>0?'<span>📋 '+nSoal+' Soal</span>':'')
-      + '<span>⏱ '+(u.durasi_menit||60)+' Menit</span><span>📅 '+mulaiStr+'</span></div>'
+      + '<span>⏱ '+(u.durasi_menit||60)+' Menit</span>'
+      + (u.kkm?'<span>🎯 KKM: '+u.kkm+'</span>':'')+'</div>'
       + btn+'</div>';
   }).join('');
 }
@@ -8460,15 +8484,14 @@ async function loadLaporanNilai() {
     }
 
     // ── 3. Ambil nilai ujian (UH) ──
-    // Kolom exam_results: siswa_name, siswa_nisn, score, exam_title, finished_at
-    // (tidak ada siswa_kelas/mapel — filter kelas dilakukan di client)
-    var uhQ = '/rest/v1/exam_results?select=siswa_name,siswa_nisn,score,exam_title,finished_at';
+    // Kolom yang tersedia: id, exam_id, exam_title, siswa_id, siswa_name, score
+    // TIDAK ADA: siswa_nisn, siswa_kelas, mapel
+    var uhQ = '/rest/v1/exam_results?select=siswa_name,siswa_id,score,exam_title,finished_at';
     var uhData = await sbFetch(uhQ) || [];
 
     // Filter kelas di client — cocokkan nama siswa dengan data tugas yang sudah difilter kelas
     var siswaNamaDiKelas = {};
     tugasSubmit.forEach(function(t){ siswaNamaDiKelas[t.siswa_nama] = t.siswa_kelas || '-'; });
-    // Jika filter kelas aktif, hanya ambil UH dari siswa yang ada di kelas tersebut
     if (filterKelas) {
       uhData = uhData.filter(function(u){ return siswaNamaDiKelas.hasOwnProperty(u.siswa_name); });
     }
