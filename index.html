@@ -5299,8 +5299,16 @@ async function forceCancelSiswa(siswaNama, examId) {
       headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({ exam_id: examId, exam_title: 'Dibatalkan', siswa_name: siswaNama, score: 0, submit_reason: 'cancelled_by_teacher' })
     });
-    showToast('✅ Ujian ' + siswaNama + ' berhasil dibatalkan!', '#D1FAE5', '#065F46');
-    setTimeout(function(){ loadViolations(); }, 500);
+    showToast('✅ Ujian ' + siswaNama + ' dibatalkan! Siswa akan otomatis keluar dalam 10 detik.', '#D1FAE5', '#065F46');
+    // Update tampilan log pelanggaran siswa ini jadi DIBATALKAN
+    allViolations = allViolations.map(function(v) {
+      if (v.siswa_name === siswaNama && v.exam_id === examId) {
+        v.event_type = 'exam_cancelled';
+      }
+      return v;
+    });
+    renderViolations(allViolations);
+    updateViolationSummary(allViolations);
   } catch(e) { showToast('⚠️ Gagal: ' + e.message, '#FEE2E2', '#991B1B'); }
 }
 
@@ -8036,7 +8044,36 @@ function startStuPolling(kelasSiswa) {
     if (ujianPanel && ujianPanel.classList.contains('active')) {
       loadUjianForSiswa(kelasSiswa);
     }
-  }, 30000);
+    // Cek apakah ujian dibatalkan oleh guru saat siswa sedang mengerjakan
+    if (examState.active && examState.examId && examState.siswaName) {
+      cekCancelDariGuru();
+    }
+  }, 10000); // cek setiap 10 detik
+}
+
+// Cek dari Supabase apakah guru sudah batalkan ujian ini
+async function cekCancelDariGuru() {
+  if (!examState.active) return;
+  try {
+    var logs = await sbFetch(
+      '/rest/v1/exam_logs?exam_id=eq.' + encodeURIComponent(examState.examId) +
+      '&siswa_name=eq.' + encodeURIComponent(examState.siswaName) +
+      '&event_type=eq.exam_cancelled&select=id,data&limit=1'
+    );
+    if (logs && logs.length > 0) {
+      var cancelData = logs[0].data || {};
+      if (cancelData.by === 'guru' && examState.active) {
+        // Guru batalkan ujian ini - force cancel di sisi siswa
+        examState.active = false;
+        clearInterval(examState.timer);
+        stopAntiCheat();
+        exitFullscreen();
+        alert('❌ Ujian Anda telah dibatalkan oleh guru.');
+        showScreen('pg-student');
+        showExamResult('cancelled', 'Dibatalkan oleh guru');
+      }
+    }
+  } catch(e2) {}
 }
 
 // ════════════════════════════════════════════════════════
