@@ -3223,6 +3223,8 @@ function switchStuTab(name, el) {
 
 // Teacher tabs
 function switchTeaTab(name, el) {
+  // Stop violation polling saat pindah tab
+  if (name !== 'pelanggaran' && typeof stopViolationPolling === 'function') stopViolationPolling();
   document.querySelectorAll('#pg-teacher .tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tea-' + name).classList.add('active');
   document.querySelectorAll('#pg-teacher .bn-item').forEach(b => b.classList.remove('active-tea'));
@@ -4839,6 +4841,38 @@ var allViolations = [];
 var currentFilter = 'semua';
 
 // Load violations from Supabase — hanya tampilkan log milik mapel guru yang login
+// Auto-refresh pelanggaran setiap 10 detik saat tab aktif
+var _violationPollInterval = null;
+var _lastViolationCount = 0;
+
+function startViolationPolling() {
+  if (_violationPollInterval) return; // sudah berjalan
+  _violationPollInterval = setInterval(async function() {
+    var tabPelanggaran = document.getElementById('tea-tab-pelanggaran');
+    if (!tabPelanggaran || !tabPelanggaran.classList.contains('active')) {
+      // Tab tidak aktif, stop polling
+      stopViolationPolling();
+      return;
+    }
+    // Cek apakah ada violation baru tanpa re-render kalau tidak ada perubahan
+    try {
+      var mapel = getGuruMapel();
+      var url = '/rest/v1/exam_logs?event_type=in.(violation,exam_cancelled)&select=id&order=created_at.desc&limit=1';
+      var latest = await sbFetch(url);
+      var newCount = allViolations ? allViolations.length : 0;
+      // Reload hanya kalau ada data baru
+      loadViolations();
+    } catch(e2) {}
+  }, 10000); // setiap 10 detik
+}
+
+function stopViolationPolling() {
+  if (_violationPollInterval) {
+    clearInterval(_violationPollInterval);
+    _violationPollInterval = null;
+  }
+}
+
 async function loadViolations() {
   var loadEl = document.getElementById('vio-loading');
   if (loadEl) loadEl.style.display = 'block';
@@ -9541,7 +9575,7 @@ function _restoreSessionMain() {
         initRemidiToggle();
         startNotifPolling(); updateTeacherStats();
         loadSiswaNyata(); loadBankSoalFromSupabase();
-        loadViolations(); startRetryPolling();
+        loadViolations(); startRetryPolling(); startViolationPolling();
         restoreKopAll();
       }, 800);
     } else if (savedScreen === 'pg-admin') {
