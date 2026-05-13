@@ -4545,21 +4545,24 @@ function handleFullscreenChange() {
   if (!examState.active) return;
   var isFs = document.fullscreenElement || document.webkitFullscreenElement;
   if (!isFs) {
-    recordViolation('Keluar dari mode fullscreen');
+    // Pakai triggerFocusViolation agar tidak dobel dengan blur/visibilitychange
+    triggerFocusViolation('Keluar dari mode fullscreen');
   }
 }
 
 function recordViolation(reason) {
   if (!examState.active) return;
   examState.violations++;
-  logToSupabase('violation', { reason: reason, count: examState.violations, siswa: examState.siswaName });
 
-  // Notify teacher panel in real-time
-  notifyTeacherViolation(examState.siswaName, reason,
-    examState.violations >= examState.maxViolations ? 'exam_cancelled' : 'violation');
+  var isCancelled = examState.violations >= examState.maxViolations;
+
+  // Log ke Supabase (async, tidak blocking)
+  logToSupabase('violation', { reason: reason, count: examState.violations, siswa: examState.siswaName });
+  notifyTeacherViolation(examState.siswaName, reason, isCancelled ? 'exam_cancelled' : 'violation');
   notifyAdminViolation(examState.siswaName, reason);
 
-  if (examState.violations >= examState.maxViolations) {
+  // Cancel/warning dilakukan LANGSUNG tanpa menunggu Supabase
+  if (isCancelled) {
     cancelExam(reason);
   } else {
     showViolationWarning(reason, examState.maxViolations - examState.violations);
