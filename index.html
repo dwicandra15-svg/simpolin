@@ -9893,6 +9893,8 @@ async function checkNewTeacherNotifs() {
   loadAllDataOnLogin = async function() {
     loadIntegrasi();
     if (_prev) await _prev();
+    // Pastikan ujian history ter-render setelah semua data loaded
+    renderUjianHistory();
   };
 })();
 
