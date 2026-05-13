@@ -1228,7 +1228,7 @@ function restoreSession() {
       <div class="sec">
         <div class="sec-hd">
           <div class="sec-title">📝 Ujian yang Sudah Dibuat</div>
-          <a class="sec-link sec-link-tea" href="#" onclick="openBuatUjianModal();return false;">+ Buat Ujian →</a>
+          <div style="display:flex;gap:8px;align-items:center;"><button onclick="loadAllDataOnLogin().then(function(){renderUjianHistory();})" style="font-size:11px;font-weight:700;background:#F0F4FF;border:1.5px solid #BFDBFE;color:#1E40AF;padding:5px 10px;border-radius:8px;cursor:pointer;font-family:'Nunito',sans-serif;">🔄 Refresh</button><a class="sec-link sec-link-tea" href="#" onclick="openBuatUjianModal();return false;">+ Buat Ujian →</a></div>
         </div>
         <div id="ujian-history-container">
           <div style="text-align:center;padding:16px;background:#F8FAFC;border-radius:12px;font-size:13px;color:#64748B;font-weight:600;">Belum ada ujian. Klik Beranda → Buat Ujian/Kuis</div>
@@ -4176,7 +4176,7 @@ var examState = {
   timeLeft: 0,
   timer: null,
   violations: 0,
-  maxViolations: 1,
+  maxViolations: 3,
   siswaId: null,
   siswaName: '',
   startTime: null
@@ -5682,7 +5682,7 @@ async function simpanUjian() {
         exam_id: examId, judul: judul, kelas: kelas,
         durasi_menit: parseInt(durasi),
         mulai_at: new Date(mulai).toISOString(),
-        anti_cheat: true, max_violations: 1, aktif: true,
+        anti_cheat: true, max_violations: 3, aktif: true,
         created_at: new Date().toISOString()
       })
     });
@@ -6546,7 +6546,7 @@ async function simpanUjian() {
         jumlah_soal: ujianBaru.jumlah_soal,
         anti_cheat: true,
         acak_soal: acakSoal,
-        max_violations: 1,
+        max_violations: 3,
         aktif: true,
         created_at: ujianBaru.created_at
       })
@@ -6755,7 +6755,7 @@ async function loadAllDataOnLogin() {
 
   try {
     // Load ujian - filter by mapel if not admin
-    var ujianUrl = '/rest/v1/ujian?select=*&order=created_at.desc&aktif=eq.true';
+    var ujianUrl = '/rest/v1/ujian?select=*&order=created_at.desc&limit=100';
     var ujianData = await sbFetch(ujianUrl);
     if (ujianData && ujianData.length > 0) {
       ujianDibuat = ujianData.map(function(u) {
@@ -7774,7 +7774,7 @@ async function loadBankSoalFromSupabase() {
 async function loadAllDataOnLogin() {
   var mapel = getGuruMapel();
   try {
-    var url = '/rest/v1/ujian?select=*&order=created_at.desc&aktif=eq.true';
+    var url = '/rest/v1/ujian?select=*&order=created_at.desc&limit=100';
     var ujianData = await sbFetch(url);
     if (ujianData && ujianData.length > 0) {
       // Dedup
