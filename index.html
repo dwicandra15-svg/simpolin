@@ -4501,21 +4501,34 @@ function startAntiCheat() {
   document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 }
 
+// Satu debounce untuk semua event pindah fokus (blur + visibilitychange)
+var _focusViolationTimeout = null;
+var _lastFocusViolation = 0;
+
+function triggerFocusViolation(reason) {
+  if (!examState.active) return;
+  var now = Date.now();
+  // Minimal 2 detik antar pelanggaran fokus agar tidak dobel
+  if (now - _lastFocusViolation < 2000) return;
+  if (_focusViolationTimeout) clearTimeout(_focusViolationTimeout);
+  _focusViolationTimeout = setTimeout(function() {
+    _focusViolationTimeout = null;
+    if (examState.active) {
+      _lastFocusViolation = Date.now();
+      recordViolation(reason);
+    }
+  }, 300);
+}
+
 function handleVisibilityChange() {
   if (!examState.active) return;
   if (document.hidden || document.visibilityState === 'hidden') {
-    recordViolation('Tab/aplikasi ditinggalkan');
+    triggerFocusViolation('Tab/aplikasi ditinggalkan');
   }
 }
 
-var _blurTimeout = null;
 function handleWindowBlur() {
-  if (!examState.active) return;
-  if (_blurTimeout) return;
-  _blurTimeout = setTimeout(function() {
-    _blurTimeout = null;
-    if (examState.active) recordViolation('Fokus berpindah dari ujian');
-  }, 500);
+  triggerFocusViolation('Fokus berpindah dari ujian');
 }
 
 function handleKeydown(e) {
