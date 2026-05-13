@@ -5187,6 +5187,18 @@ async function izinkanRemidi(logId, siswaNama, examId) {
       });
     }
 
+    // 2b. Hapus exam_logs event exam_submitted agar cek ganda tidak memblokir
+    await fetch(SUPABASE_URL + '/rest/v1/exam_logs?exam_id=eq.' + encodeURIComponent(examId) + '&siswa_name=eq.' + encodeURIComponent(siswaNama) + '&event_type=eq.exam_submitted', {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+
+    // 2c. Hapus juga exam_logs violation agar violations count reset
+    await fetch(SUPABASE_URL + '/rest/v1/exam_logs?exam_id=eq.' + encodeURIComponent(examId) + '&siswa_name=eq.' + encodeURIComponent(siswaNama) + '&event_type=eq.violation', {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON }
+    });
+
     // 3. Log aksi guru ke Supabase
     await fetch(SUPABASE_URL + '/rest/v1/exam_logs', {
       method: 'POST',
@@ -7288,20 +7300,41 @@ function renderRetryRequests() {
 }
 
 async function approveRetry(logId, siswaNama, examId) {
+  // Cegah double click
+  var btn = event && event.target;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Memproses...'; }
   try {
-    // Delete previous exam result for this siswa+exam
+    // 1. Hapus hasil ujian sebelumnya dari exam_results
     await sbFetch('/rest/v1/exam_results?exam_id=eq.' + examId + '&siswa_name=eq.' + encodeURIComponent(siswaNama), {
       method: 'DELETE'
     });
-    // Update log status to approved
+
+    // 2. Hapus exam_submitted dari exam_logs agar cek one-attempt ter-reset
+    await sbFetch('/rest/v1/exam_logs?exam_id=eq.' + examId + '&siswa_name=eq.' + encodeURIComponent(siswaNama) + '&event_type=eq.exam_submitted', {
+      method: 'DELETE'
+    });
+
+    // 3. Hapus violation logs agar violations count reset
+    await sbFetch('/rest/v1/exam_logs?exam_id=eq.' + examId + '&siswa_name=eq.' + encodeURIComponent(siswaNama) + '&event_type=eq.violation', {
+      method: 'DELETE'
+    });
+
+    // 4. Hapus exam_cancelled jika ada
+    await sbFetch('/rest/v1/exam_logs?exam_id=eq.' + examId + '&siswa_name=eq.' + encodeURIComponent(siswaNama) + '&event_type=eq.exam_cancelled', {
+      method: 'DELETE'
+    });
+
+    // 5. Update status request
     await sbFetch('/rest/v1/exam_logs?id=eq.' + logId, {
       method: 'PATCH',
       body: JSON.stringify({ data: { status: 'approved', alasan: '' } })
     });
+
     retryRequests = retryRequests.filter(function(r){ return r.id !== logId; });
     renderRetryRequests();
     showToast('✅ Disetujui! ' + siswaNama + ' bisa mengerjakan ulang.', '#D1FAE5', '#065F46');
-    // Notify via log
+
+    // 6. Notify siswa via log
     await sbFetch('/rest/v1/exam_logs', {
       method: 'POST',
       body: JSON.stringify({
