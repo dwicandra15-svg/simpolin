@@ -670,8 +670,9 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
 </style>
 <script>
 /* ════ STUB AWAL — fungsi onclick tersedia sebelum script utama dimuat ════ */
-var currentRole = 'siswa';
-var _doLoginReady = false;
+// Gunakan window.* agar tidak konflik dengan let/const di script utama
+window.currentRole = window.currentRole || 'siswa';
+window._doLoginReady = false;
 
 function setRole(role, btn) {
   currentRole = role;
@@ -721,6 +722,23 @@ function showRegisterGuru() {
 function closeForgotModal() {
   var m = document.getElementById('forgot-modal');
   if (m) m.classList.remove('open');
+}
+
+// Stub restoreSession — dipanggil saat <body onload>
+// Script utama akan override fungsi ini saat selesai dimuat
+function restoreSession() {
+  // Coba panggil versi asli jika sudah siap
+  var tries = 0;
+  var waiter = setInterval(function() {
+    tries++;
+    if (window._appReady && typeof window._restoreSessionMain === 'function') {
+      clearInterval(waiter);
+      window._restoreSessionMain();
+    } else if (tries > 80) {
+      clearInterval(waiter);
+      console.warn('restoreSession: script utama terlalu lama dimuat');
+    }
+  }, 100);
 }
 </script>
 </head>
@@ -9248,7 +9266,7 @@ async function loadInfoTerbaru() {
 }
 
 // ── Restore KOP on page load ── (definisi utama restoreSession)
-function restoreSession() {
+function _restoreSessionMain() {
   restoreKopAll();
   restoreKopSettings();
   restoreGuruPhoto();
@@ -10681,6 +10699,10 @@ async function isRemidiEnabled() {
   return true; // default aktif
 }
 
+
+// Script utama siap
+window._appReady = true;
+window._doLoginReady = true;
 </script>
 </body>
 </html>
