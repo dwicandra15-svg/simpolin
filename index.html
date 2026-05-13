@@ -5973,7 +5973,7 @@ async function simpanSoal() {
   var soalData = {
     pertanyaan: pertanyaan,
     tipe: type,
-    mapel: mapel,
+    mapel: mapel ? mapel.trim() : null, // normalize: hapus spasi di ujung
     tingkat: tingkat,
     bobot_nilai: bobot,
     created_at: new Date().toISOString()
@@ -7625,7 +7625,14 @@ function renderBankSoal() {
   var container = document.getElementById('bank-soal-container');
   if (!container) return;
   var mapel = getGuruMapel();
-  var list = mapel ? soalList.filter(function(s){ return !s.mapel || s.mapel === mapel || s.mapel === ''; }) : soalList;
+  // Filter case-insensitive dan trim agar "IPA", "ipa", " IPA " semua cocok
+  var mapelNorm = mapel ? mapel.trim().toLowerCase() : null;
+  var list = mapelNorm
+    ? soalList.filter(function(s){
+        if (!s.mapel || s.mapel.trim() === '') return true; // soal tanpa mapel → tampil ke semua
+        return s.mapel.trim().toLowerCase() === mapelNorm;
+      })
+    : soalList;
 
   if (list.length === 0) {
     container.innerHTML = '<div style="text-align:center;padding:16px;background:#F8FAFC;border-radius:10px;color:#64748B;font-size:12px;font-weight:600;">Belum ada soal'+(mapel?' untuk '+mapel:'')+'. Klik tombol di atas untuk tambah soal.</div>';
@@ -7658,18 +7665,30 @@ function renderBankSoal() {
   }).join('');
 }
 
-// Override loadBankSoalFromSupabase — filter by mapel
+// Override loadBankSoalFromSupabase — filter by mapel (case-insensitive)
 async function loadBankSoalFromSupabase() {
   try {
     var mapel = getGuruMapel();
-    var url = '/rest/v1/soal?select=*&order=created_at.desc';
-    var data = await sbFetch(url);
-    if (data && data.length > 0) {
-      // Filter by mapel jika bukan admin
-      soalList = mapel ? data.filter(function(s){ return !s.mapel || s.mapel === mapel || s.mapel === ''; }) : data;
+    var mapelNorm = mapel ? mapel.trim().toLowerCase() : null;
+    // Range header pastikan semua data diambil (tidak dipotong Supabase)
+    var data = await sbFetch('/rest/v1/soal?select=*&order=created_at.desc', {
+      headers: { 'Range': '0-9999', 'Range-Unit': 'items' }
+    });
+    if (data) {
+      // Tampilkan semua jika array kosong (belum ada soal)
+      if (!Array.isArray(data)) data = [];
+      soalList = mapelNorm
+        ? data.filter(function(s){
+            if (!s.mapel || s.mapel.trim() === '') return true;
+            return s.mapel.trim().toLowerCase() === mapelNorm;
+          })
+        : data;
       renderBankSoal();
     }
-  } catch(e) { console.log('Load soal error:', e); }
+  } catch(e) {
+    console.log('Load soal error:', e);
+    renderBankSoal(); // tetap render (pakai data lokal jika ada)
+  }
 }
 
 // Override loadAllDataOnLogin — dedup ujian
@@ -7692,9 +7711,17 @@ async function loadAllDataOnLogin() {
         return u;
       });
     }
-    var soalData = await sbFetch('/rest/v1/soal?select=*&order=created_at.desc');
-    if (soalData && soalData.length > 0) {
-      soalList = mapel ? soalData.filter(function(s){ return !s.mapel || s.mapel === mapel || s.mapel === ''; }) : soalData;
+    var soalData = await sbFetch('/rest/v1/soal?select=*&order=created_at.desc', {
+      headers: { 'Range': '0-9999', 'Range-Unit': 'items' }
+    });
+    if (soalData && Array.isArray(soalData)) {
+      var mapelNormAll = mapel ? mapel.trim().toLowerCase() : null;
+      soalList = mapelNormAll
+        ? soalData.filter(function(s){
+            if (!s.mapel || s.mapel.trim() === '') return true;
+            return s.mapel.trim().toLowerCase() === mapelNormAll;
+          })
+        : soalData;
     }
   } catch(e) { console.log('loadAllData error:', e); }
 }
