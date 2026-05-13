@@ -4226,8 +4226,17 @@ async function launchExam(title, durasiMenit, examId) {
   examState.examMapel = '';
   examState.answers   = {};
   examState.timeLeft  = (durasiMenit || 60) * 60;
-  examState.violations = 0;
+  // Restore violations dari sessionStorage (untuk mobile yang sering refresh)
+  var _vKey = 'violations_' + (examState.examId || '');
+  var _storedV = 0;
+  try { _storedV = parseInt(sessionStorage.getItem(_vKey) || '0'); } catch(e3){}
+  examState.violations = _storedV;
   examState.maxViolations = 3; // batas pelanggaran sebelum ujian dibatalkan
+  // Kalau sudah >= batas, langsung cancel
+  if (examState.violations >= examState.maxViolations) {
+    setTimeout(function(){ cancelExam('Batas pelanggaran terlampaui'); }, 500);
+    return;
+  }
   examState.startTime = new Date().toISOString();
   examState.siswaName = '';
   try { examState.siswaName = localStorage.getItem('stuNama') || ''; } catch(e){}
@@ -4552,7 +4561,14 @@ function handleFullscreenChange() {
 
 function recordViolation(reason) {
   if (!examState.active) return;
-  examState.violations++;
+
+  // Ambil violations dari sessionStorage agar persisten saat mobile refresh
+  var storageKey = 'violations_' + examState.examId;
+  var storedViolations = 0;
+  try { storedViolations = parseInt(sessionStorage.getItem(storageKey) || '0'); } catch(e2){}
+  storedViolations++;
+  try { sessionStorage.setItem(storageKey, storedViolations); } catch(e2){}
+  examState.violations = storedViolations;
 
   var isCancelled = examState.violations >= examState.maxViolations;
 
@@ -4563,6 +4579,8 @@ function recordViolation(reason) {
 
   // Cancel/warning dilakukan LANGSUNG tanpa menunggu Supabase
   if (isCancelled) {
+    // Hapus storage setelah cancel
+    try { sessionStorage.removeItem(storageKey); } catch(e2){}
     cancelExam(reason);
   } else {
     showViolationWarning(reason, examState.maxViolations - examState.violations);
