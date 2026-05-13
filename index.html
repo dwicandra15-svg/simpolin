@@ -4729,7 +4729,29 @@ async function saveResultToSupabase(score, correct, reason, perolehanBobot, tota
       headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
       body: JSON.stringify({ event_type: 'exam_submitted', exam_id: examState.examId, siswa_name: payload.siswa_name, data: { score: score, nisn: nisn }, created_at: new Date().toISOString() })
     });
-  } catch(e) { console.log('Save result failed (offline?):', e); }
+  } catch(e) {
+    console.error('saveResultToSupabase ERROR:', e);
+    // Coba simpan tanpa kolom answers (yang bisa terlalu panjang)
+    try {
+      var payload2 = Object.assign({}, payload);
+      delete payload2.answers;
+      var r2 = await fetch(SUPABASE_URL + '/rest/v1/exam_results', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+        body: JSON.stringify(payload2)
+      });
+      if (r2.ok) {
+        console.log('Saved without answers field - OK');
+      } else {
+        var errTxt = await r2.text();
+        console.error('Save retry failed:', errTxt);
+        alert('\u26a0\ufe0f Nilai gagal tersimpan! Error: ' + errTxt.substring(0,100) + '\nScreenshot ini dan lapor ke admin.');
+      }
+    } catch(e2) {
+      console.error('Save retry ERROR:', e2);
+      alert('\u26a0\ufe0f Nilai gagal tersimpan! Tidak ada koneksi internet.');
+    }
+  }
 }
 
 // Load exam questions from Supabase (for production)
