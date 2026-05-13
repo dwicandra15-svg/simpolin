@@ -6637,7 +6637,48 @@ function hapusUjian(examId) {
 
 function lihatHasilUjian(examId) {
   showToast('📊 Memuat hasil ujian...', '#DBEAFE', '#1E40AF');
-  // In production: load from exam_results table
+  sbFetch('/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId) + '&select=*&order=score.desc').then(function(data) {
+    if (!data || data.length === 0) {
+      showToast('⚠️ Belum ada siswa yang mengumpulkan hasil ujian ini.', '#FEF3C7', '#92400E');
+      return;
+    }
+    var rows = data.map(function(r, i) {
+      var score = r.score !== null && r.score !== undefined ? parseFloat(r.score).toFixed(1) : '-';
+      var grade = score >= 90 ? 'A' : score >= 80 ? 'B' : score >= 70 ? 'C' : score >= 60 ? 'D' : 'E';
+      var gradeColor = score >= 70 ? '#059669' : '#DC2626';
+      return '<tr style="border-bottom:1px solid #E2E8F0;">' +
+        '<td style="padding:8px 10px;font-size:12px;font-weight:700;color:#64748B;">' + (i+1) + '</td>' +
+        '<td style="padding:8px 10px;font-size:13px;font-weight:700;color:#1E293B;">' + (r.siswa_name||'-') + '</td>' +
+        '<td style="padding:8px 10px;font-size:13px;font-weight:800;color:#1E40AF;">' + score + '</td>' +
+        '<td style="padding:8px 10px;"><span style="background:' + (score>=70?'#D1FAE5':'#FEE2E2') + ';color:' + gradeColor + ';padding:2px 8px;border-radius:99px;font-size:11px;font-weight:800;">' + grade + '</span></td>' +
+      '</tr>';
+    }).join('');
+
+    var avg = data.reduce(function(s,r){ return s + (parseFloat(r.score)||0); }, 0) / data.length;
+    var html = '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="this.remove()">' +
+      '<div style="background:#fff;border-radius:16px;padding:20px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto;" onclick="event.stopPropagation()">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+          '<div style="font-size:16px;font-weight:900;color:#1E293B;">📊 Hasil Ujian</div>' +
+          '<button onclick="this.closest('div[style*=fixed]').remove()" style="border:none;background:#FEE2E2;color:#991B1B;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:800;">× Tutup</button>' +
+        '</div>' +
+        '<div style="background:#F0FDF4;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:20px;">' +
+          '<span style="font-size:13px;font-weight:700;color:#065F46;">👥 ' + data.length + ' siswa</span>' +
+          '<span style="font-size:13px;font-weight:700;color:#065F46;">📊 Rata-rata: ' + avg.toFixed(1) + '</span>' +
+        '</div>' +
+        '<table style="width:100%;border-collapse:collapse;">' +
+          '<thead><tr style="background:#F8FAFC;">' +
+            '<th style="padding:8px 10px;font-size:11px;color:#64748B;text-align:left;">#</th>' +
+            '<th style="padding:8px 10px;font-size:11px;color:#64748B;text-align:left;">NAMA</th>' +
+            '<th style="padding:8px 10px;font-size:11px;color:#64748B;text-align:left;">NILAI</th>' +
+            '<th style="padding:8px 10px;font-size:11px;color:#64748B;text-align:left;">GRADE</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+      '</div></div>';
+    document.body.insertAdjacentHTML('beforeend', html);
+  }).catch(function(e) {
+    showToast('❌ Gagal load hasil ujian: ' + e.message, '#FEE2E2', '#991B1B');
+  });
 }
 
 // ── RENDER UJIAN DI MODE SISWA ──
@@ -8634,7 +8675,7 @@ async function loadLaporanNilai() {
 
     uhData.forEach(function(u) {
       if (!u.score && u.score !== 0) return;
-      if (filterMapel) return; // exam_results tidak punya kolom mapel — skip filter mapel untuk UH
+      // exam_results tidak punya kolom mapel, tampilkan semua UH tanpa filter mapel
       var key = u.siswa_name;
       var kelasUh = siswaNamaDiKelas[key] || u.siswa_kelas || '-';
       if (!siswaMap[key]) siswaMap[key] = { nama: u.siswa_name, kelas: kelasUh, tugasNilai: [], uhNilai: [] };
