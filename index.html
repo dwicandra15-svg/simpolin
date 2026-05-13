@@ -7094,15 +7094,20 @@ async function cekSiswaUdahUjian(examId, siswaNama) {
     var nisn = '';
     try { nisn = localStorage.getItem('stuNisn') || ''; } catch(e2){}
 
-    // Cek berdasarkan NISN dulu (lebih akurat)
+    // Cek 1: dari exam_results (nilai sudah tersimpan)
     if (nisn) {
       var dataNisn = await sbFetch('/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId) + '&siswa_nisn=eq.' + encodeURIComponent(nisn) + '&select=siswa_name,siswa_nisn,score,finished_at');
       if (dataNisn && dataNisn.length > 0) return dataNisn[0];
     }
-
-    // Fallback: cek berdasarkan nama — langsung filter di query agar lebih ringan
     var data = await sbFetch('/rest/v1/exam_results?exam_id=eq.' + encodeURIComponent(examId) + '&siswa_name=eq.' + encodeURIComponent(siswaNama) + '&select=siswa_name,siswa_nisn,score,finished_at&limit=1');
     if (data && data.length > 0) return data[0];
+
+    // Cek 2: dari exam_logs (meski nilai gagal tersimpan, submit tetap tercatat)
+    var logData = await sbFetch('/rest/v1/exam_logs?exam_id=eq.' + encodeURIComponent(examId) + '&siswa_name=eq.' + encodeURIComponent(siswaNama) + '&event_type=eq.exam_submitted&select=siswa_name,created_at&limit=1');
+    if (logData && logData.length > 0) {
+      return { siswa_name: siswaNama, score: null, finished_at: logData[0].created_at, from_log: true };
+    }
+
     return null;
   } catch(e) { return null; }
 }
@@ -8675,11 +8680,22 @@ async function loadLaporanNilai() {
     var uhQ = '/rest/v1/exam_results?select=siswa_name,siswa_id,score,exam_title,finished_at';
     var uhData = await sbFetch(uhQ) || [];
 
-    // Filter kelas di client — cocokkan nama siswa dengan data tugas yang sudah difilter kelas
+    // Ambil kelas siswa dari tabel siswa sebagai referensi utama
+    var siswaKelasMap = {};
+    try {
+      var siswaRef = await sbFetch('/rest/v1/siswa?select=nama,kelas&order=nama') || [];
+      siswaRef.forEach(function(s){ siswaKelasMap[s.nama] = s.kelas || '-'; });
+    } catch(e2) {}
+
     var siswaNamaDiKelas = {};
     tugasSubmit.forEach(function(t){ siswaNamaDiKelas[t.siswa_nama] = t.siswa_kelas || '-'; });
+
+    // Filter UH berdasarkan kelas pakai siswaKelasMap
     if (filterKelas) {
-      uhData = uhData.filter(function(u){ return siswaNamaDiKelas.hasOwnProperty(u.siswa_name); });
+      uhData = uhData.filter(function(u) {
+        var kelas = siswaKelasMap[u.siswa_name] || siswaNamaDiKelas[u.siswa_name] || '';
+        return kelas === filterKelas;
+      });
     }
 
     // ── 4. Gabungkan per siswa ──
@@ -8699,7 +8715,7 @@ async function loadLaporanNilai() {
       if (!u.score && u.score !== 0) return;
       // exam_results tidak punya kolom mapel, tampilkan semua UH tanpa filter mapel
       var key = u.siswa_name;
-      var kelasUh = siswaNamaDiKelas[key] || u.siswa_kelas || '-';
+      var kelasUh = siswaKelasMap[key] || siswaNamaDiKelas[key] || '-';
       if (!siswaMap[key]) siswaMap[key] = { nama: u.siswa_name, kelas: kelasUh, tugasNilai: [], uhNilai: [] };
       siswaMap[key].uhNilai.push(parseFloat(u.score));
     });
