@@ -4226,17 +4226,23 @@ async function launchExam(title, durasiMenit, examId) {
   examState.examMapel = '';
   examState.answers   = {};
   examState.timeLeft  = (durasiMenit || 60) * 60;
-  // Restore violations dari sessionStorage (untuk mobile yang sering refresh)
-  var _vKey = 'violations_' + (examState.examId || '');
-  var _storedV = 0;
-  try { _storedV = parseInt(sessionStorage.getItem(_vKey) || '0'); } catch(e3){}
-  examState.violations = _storedV;
+  examState.violations = 0;
   examState.maxViolations = 3; // batas pelanggaran sebelum ujian dibatalkan
-  // Kalau sudah >= batas, langsung cancel
-  if (examState.violations >= examState.maxViolations) {
-    setTimeout(function(){ cancelExam('Batas pelanggaran terlampaui'); }, 500);
-    return;
-  }
+  // Cek violations dari Supabase saat ujian dimulai (untuk mobile yang reload)
+  setTimeout(async function() {
+    try {
+      var logs = await sbFetch(
+        '/rest/v1/exam_logs?exam_id=eq.' + encodeURIComponent(examState.examId) +
+        '&siswa_name=eq.' + encodeURIComponent(examState.siswaName) +
+        '&event_type=eq.violation&select=id'
+      );
+      var total = (logs && logs.length) ? logs.length : 0;
+      examState.violations = total;
+      if (total >= examState.maxViolations && examState.active) {
+        cancelExam('Batas pelanggaran terlampaui');
+      }
+    } catch(e3){}
+  }, 2000);
   examState.startTime = new Date().toISOString();
   examState.siswaName = '';
   try { examState.siswaName = localStorage.getItem('stuNama') || ''; } catch(e){}
@@ -4562,28 +4568,43 @@ function handleFullscreenChange() {
 function recordViolation(reason) {
   if (!examState.active) return;
 
-  // Ambil violations dari sessionStorage agar persisten saat mobile refresh
-  var storageKey = 'violations_' + examState.examId;
-  var storedViolations = 0;
-  try { storedViolations = parseInt(sessionStorage.getItem(storageKey) || '0'); } catch(e2){}
-  storedViolations++;
-  try { sessionStorage.setItem(storageKey, storedViolations); } catch(e2){}
-  examState.violations = storedViolations;
+  examState.violations++;
+  var currentCount = examState.violations;
+  var isCancelled = currentCount >= examState.maxViolations;
 
-  var isCancelled = examState.violations >= examState.maxViolations;
-
-  // Log ke Supabase (async, tidak blocking)
-  logToSupabase('violation', { reason: reason, count: examState.violations, siswa: examState.siswaName });
+  // Log ke Supabase dulu, lalu cek total dari Supabase untuk keputusan cancel
+  logToSupabase('violation', { reason: reason, count: currentCount, siswa: examState.siswaName });
   notifyTeacherViolation(examState.siswaName, reason, isCancelled ? 'exam_cancelled' : 'violation');
   notifyAdminViolation(examState.siswaName, reason);
 
-  // Cancel/warning dilakukan LANGSUNG tanpa menunggu Supabase
-  if (isCancelled) {
-    // Hapus storage setelah cancel
-    try { sessionStorage.removeItem(storageKey); } catch(e2){}
-    cancelExam(reason);
-  } else {
-    showViolationWarning(reason, examState.maxViolations - examState.violations);
+  // Cek dari Supabase untuk keputusan final (agar persisten di mobile)
+  _checkViolationsAndCancel(reason, currentCount);
+}
+
+async function _checkViolationsAndCancel(reason, localCount) {
+  if (!examState.active) return;
+  try {
+    // Hitung total violations dari Supabase untuk siswa ini di ujian ini
+    var logs = await sbFetch(
+      '/rest/v1/exam_logs?exam_id=eq.' + encodeURIComponent(examState.examId) +
+      '&siswa_name=eq.' + encodeURIComponent(examState.siswaName) +
+      '&event_type=eq.violation&select=id'
+    );
+    var totalFromDB = (logs && logs.length) ? logs.length : localCount;
+    examState.violations = totalFromDB;
+
+    if (totalFromDB >= examState.maxViolations) {
+      if (examState.active) cancelExam(reason);
+    } else {
+      showViolationWarning(reason, examState.maxViolations - totalFromDB);
+    }
+  } catch(e) {
+    // Fallback ke local count jika Supabase tidak bisa diakses
+    if (localCount >= examState.maxViolations) {
+      cancelExam(reason);
+    } else {
+      showViolationWarning(reason, examState.maxViolations - localCount);
+    }
   }
 }
 
