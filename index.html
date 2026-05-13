@@ -5023,6 +5023,7 @@ function renderViolations(data) {
             '<span style="font-size:10px;color:#94A3B8;font-weight:600;">🕐 ' + timeAgo + '</span>' +
             '<div style="display:flex;gap:6px;">' +
               '<button onclick="izinkanRemidi(\'' + v.id + '\',\'' + (v.siswa_name||'').replace(/'/g,"\\'") + '\',\'' + (v.exam_id||'').replace(/'/g,"\\'") + '\')" style="padding:4px 10px;border-radius:8px;border:1.5px solid #059669;background:#F0FDF4;color:#059669;font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">🔓 Izinkan Remidi</button>' +
+              '<button onclick="forceCancelSiswa(\'' + (v.siswa_name||'').replace(/\'/g,"\\\'") + '\',\'' + (v.exam_id||'').replace(/\'/g,"\\\'") + '\')" style="padding:4px 10px;border-radius:8px;border:1.5px solid #7C3AED;background:#F5F3FF;color:#7C3AED;font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">✂️ Batalkan</button>' +
               '<button onclick="hapusViolationLog(\'' + v.id + '\')" style="padding:4px 10px;border-radius:8px;border:1.5px solid #DC2626;background:#FEF2F2;color:#DC2626;font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">🗑️ Hapus</button>' +
               '<button onclick="showVioDetail(\'' + v.id + '\')" style="padding:4px 10px;border-radius:8px;border:1.5px solid ' + stripColor + ';background:#fff;color:' + stripColor + ';font-family:\'Nunito\',sans-serif;font-size:10px;font-weight:800;cursor:pointer;">Detail →</button>' +
             '</div>' +
@@ -5245,6 +5246,28 @@ async function izinkanRemidi(logId, siswaNama, examId) {
     console.error('izinkanRemidi error:', e);
     showToast('⚠️ Gagal membuka blokir: ' + (e.message || 'Cek koneksi.'), '#FEE2E2', '#991B1B');
   }
+}
+
+// Force cancel ujian siswa dari dashboard guru
+async function forceCancelSiswa(siswaNama, examId) {
+  if (!confirm('Batalkan ujian ' + siswaNama + ' secara paksa?')) return;
+  try {
+    await sbFetch('/rest/v1/exam_logs', {
+      method: 'POST',
+      body: JSON.stringify({
+        event_type: 'exam_cancelled', exam_id: examId, siswa_name: siswaNama,
+        data: { reason: 'Dibatalkan oleh guru', by: 'guru' },
+        created_at: new Date().toISOString()
+      })
+    });
+    await fetch(SUPABASE_URL + '/rest/v1/exam_results', {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + SUPABASE_ANON, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ exam_id: examId, exam_title: 'Dibatalkan', siswa_name: siswaNama, score: 0, submit_reason: 'cancelled_by_teacher' })
+    });
+    showToast('✅ Ujian ' + siswaNama + ' berhasil dibatalkan!', '#D1FAE5', '#065F46');
+    setTimeout(function(){ loadViolations(); }, 500);
+  } catch(e) { showToast('⚠️ Gagal: ' + e.message, '#FEE2E2', '#991B1B'); }
 }
 
 // Also notify admin panel
