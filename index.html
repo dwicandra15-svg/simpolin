@@ -4227,6 +4227,7 @@ async function launchExam(title, durasiMenit, examId) {
   examState.answers   = {};
   examState.timeLeft  = (durasiMenit || 60) * 60;
   examState.violations = 0;
+  examState.maxViolations = 3; // batas pelanggaran sebelum ujian dibatalkan
   examState.startTime = new Date().toISOString();
   examState.siswaName = '';
   try { examState.siswaName = localStorage.getItem('stuNama') || ''; } catch(e){}
@@ -4507,9 +4508,14 @@ function handleVisibilityChange() {
   }
 }
 
+var _blurTimeout = null;
 function handleWindowBlur() {
   if (!examState.active) return;
-  recordViolation('Fokus berpindah dari ujian');
+  if (_blurTimeout) return;
+  _blurTimeout = setTimeout(function() {
+    _blurTimeout = null;
+    if (examState.active) recordViolation('Fokus berpindah dari ujian');
+  }, 500);
 }
 
 function handleKeydown(e) {
