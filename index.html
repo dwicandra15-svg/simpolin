@@ -668,6 +668,61 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);
   margin-top:12px;box-shadow:0 4px 14px rgba(37,99,235,.3);
 }
 </style>
+<script>
+/* ════ STUB AWAL — fungsi onclick tersedia sebelum script utama dimuat ════ */
+var currentRole = 'siswa';
+var _doLoginReady = false;
+
+function setRole(role, btn) {
+  currentRole = role;
+  document.querySelectorAll('.role-tab').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var fs = document.getElementById('fields-siswa');
+  var fg = document.getElementById('fields-guru');
+  if (fs) fs.style.display = role === 'siswa' ? 'block' : 'none';
+  if (fg) fg.style.display = role === 'guru'  ? 'block' : 'none';
+}
+
+function doLogin() {
+  if (_doLoginReady && typeof _doLoginMain === 'function') { _doLoginMain(); return; }
+  var btn = document.querySelector('.btn-login');
+  if (btn) { btn.textContent = '⏳ Memuat...'; btn.disabled = true; }
+  var tries = 0;
+  var waiter = setInterval(function() {
+    tries++;
+    if (_doLoginReady && typeof _doLoginMain === 'function') {
+      clearInterval(waiter);
+      if (btn) { btn.textContent = '🚀 Masuk Sekarang'; btn.disabled = false; }
+      _doLoginMain();
+    } else if (tries > 60) {
+      clearInterval(waiter);
+      if (btn) { btn.textContent = '🚀 Masuk Sekarang'; btn.disabled = false; }
+      alert('Halaman lambat dimuat. Refresh halaman dan coba lagi.');
+    }
+  }, 100);
+}
+
+function togglePassVis() {
+  var p = document.getElementById('inp-guru-pass') || document.getElementById('inp-pass');
+  if (p) p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+function toggleRegPass() {
+  var p = document.getElementById('reg-pass');
+  if (p) p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+function showRegisterGuru() {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  var pg = document.getElementById('pg-register-guru');
+  if (pg) pg.classList.add('active');
+}
+
+function closeForgotModal() {
+  var m = document.getElementById('forgot-modal');
+  if (m) m.classList.remove('open');
+}
+</script>
 </head>
 <body onload="restoreSession()">
 <div class="phone" id="app">
@@ -5990,7 +6045,7 @@ async function simpanSoal() {
     soalData.kunci_jawaban = (document.getElementById('soal-kunci')||{}).value || 'A';
 
   } else if (type === 'essay') {
-    soalData.pilihan = [];
+    soalData.pilihan = null; // essay tidak punya pilihan — null lebih aman dari []
     soalData.kunci_jawaban = (document.getElementById('soal-essay-kunci')||{}).value.trim() || '-';
 
   } else if (type === 'multi') {
@@ -6061,17 +6116,14 @@ async function simpanSoal() {
           if (r3.ok) {
             showToast('✅ Soal berhasil ditambahkan! (Jalankan SQL fix untuk fitur tipe soal)', '#D1FAE5', '#065F46');
           } else {
-            soalData.id = 'local-' + Date.now();
-            soalList.push(soalData); renderBankSoal();
-            document.getElementById('tambah-soal-modal').classList.remove('open');
-            showToast('⚠️ Disimpan lokal. Jalankan SQL FIX_TABEL_SOAL_V4.sql di Supabase!', '#FEF3C7', '#92400E');
-            return;
+            // Jangan tutup modal — soal tidak tersimpan ke database
+          showToast('❌ Gagal simpan. Jalankan FIX_TABEL_SOAL_V4.sql di Supabase lalu coba lagi!', '#FEE2E2', '#991B1B');
+          return;
           }
         } else {
-          soalData.id = 'local-' + Date.now();
-          soalList.push(soalData); renderBankSoal();
-          document.getElementById('tambah-soal-modal').classList.remove('open');
-          showToast('⚠️ Error: ' + (errObj.message || errTxt).substring(0,80), '#FEE2E2', '#991B1B');
+          // Tampilkan error Supabase yang sebenarnya — jangan tutup modal
+          showToast('❌ Error Supabase: ' + (errObj.message || errTxt).substring(0, 100), '#FEE2E2', '#991B1B');
+          console.error('Supabase POST error:', errObj);
           return;
         }
       } else {
@@ -6082,11 +6134,20 @@ async function simpanSoal() {
     editingSoalId = null;
     setTimeout(function() { loadBankSoalFromSupabase(); }, 300);
   } catch(err) {
-    soalData.id = soalData.id || 'local-' + Date.now();
-    if (!soalList.find(function(s){ return s.id === soalData.id; })) soalList.push(soalData);
-    renderBankSoal();
-    document.getElementById('tambah-soal-modal').classList.remove('open');
-    showToast('✅ Soal disimpan (lokal). Cek koneksi Supabase.', '#FEF3C7', '#92400E');
+    console.error('simpanSoal ERROR:', err);
+    // Jangan tutup modal — guru harus tahu soal GAGAL tersimpan
+    var errMsg = err.message || String(err);
+    // Pesan error yang informatif
+    if (errMsg.includes('pilihan') || errMsg.includes('array') || errMsg.includes('TEXT[]')) {
+      showToast('❌ Gagal simpan: kolom pilihan bermasalah. Coba lagi atau jalankan SQL fix tabel soal.', '#FEE2E2', '#991B1B');
+    } else if (errMsg.includes('tipe') || errMsg.includes('column')) {
+      showToast('❌ Kolom "tipe" belum ada di Supabase. Jalankan FIX_TABEL_SOAL_V4.sql!', '#FEE2E2', '#991B1B');
+    } else if (errMsg.includes('network') || errMsg.includes('fetch') || errMsg.includes('Failed')) {
+      showToast('❌ Koneksi gagal! Periksa internet lalu klik Simpan Soal lagi.', '#FEE2E2', '#991B1B');
+    } else {
+      showToast('❌ Soal GAGAL tersimpan ke Supabase: ' + errMsg.substring(0, 80), '#FEE2E2', '#991B1B');
+    }
+    // Jangan tutup modal agar guru bisa coba lagi
   } finally {
     if (btn) { btn.textContent = '💾 Simpan Soal'; btn.disabled = false; }
   }
