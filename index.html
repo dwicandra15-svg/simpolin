@@ -6655,11 +6655,11 @@ function lihatHasilUjian(examId) {
     }).join('');
 
     var avg = data.reduce(function(s,r){ return s + (parseFloat(r.score)||0); }, 0) / data.length;
-    var html = '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="this.remove()">' +
+    var html = '<div data-hasil-modal style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="this.remove()">' +
       '<div style="background:#fff;border-radius:16px;padding:20px;width:90%;max-width:500px;max-height:80vh;overflow-y:auto;" onclick="event.stopPropagation()">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
           '<div style="font-size:16px;font-weight:900;color:#1E293B;">📊 Hasil Ujian</div>' +
-          '<button onclick="this.closest('div[style*=fixed]').remove()" style="border:none;background:#FEE2E2;color:#991B1B;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:800;">× Tutup</button>' +
+          '<button onclick="document.querySelector(\"[data-hasil-modal]\").remove()" style="border:none;background:#FEE2E2;color:#991B1B;border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:800;">× Tutup</button>' +
         '</div>' +
         '<div style="background:#F0FDF4;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:20px;">' +
           '<span style="font-size:13px;font-weight:700;color:#065F46;">👥 ' + data.length + ' siswa</span>' +
